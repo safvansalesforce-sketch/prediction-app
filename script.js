@@ -226,29 +226,53 @@
         const homeVal = parseInt(document.getElementById('goals-home').value) || 0;
         const awayVal = parseInt(document.getElementById('goals-away').value) || 0;
         const hint = document.getElementById('winner-hint');
+
+        const homeRadio = document.getElementById('radio-home');
+        const awayRadio = document.getElementById('radio-away');
         const drawRadio = document.querySelector('input[name="winner"][value="draw"]');
+        const homeLabel = homeRadio ? homeRadio.closest('label') : null;
+        const awayLabel = awayRadio ? awayRadio.closest('label') : null;
         const drawLabel = drawRadio ? drawRadio.closest('label') : null;
 
+        // Determine the only valid winner based on scores
         let derivedValue;
         if (homeVal > awayVal) {
-            derivedValue = document.getElementById('radio-home').value;
+            derivedValue = homeRadio ? homeRadio.value : '';
         } else if (awayVal > homeVal) {
-            derivedValue = document.getElementById('radio-away').value;
+            derivedValue = awayRadio ? awayRadio.value : '';
         } else {
             derivedValue = 'draw';
         }
 
-        // Disable/enable Draw option based on whether scores are equal
-        const isUnequal = homeVal !== awayVal;
-        if (drawRadio) {
-            drawRadio.disabled = isUnequal;
-            if (drawLabel) {
-                drawLabel.style.opacity = isUnequal ? '0.35' : '';
-                drawLabel.style.cursor = isUnequal ? 'not-allowed' : '';
-                drawLabel.title = isUnequal ? 'Draw is only possible when scores are equal' : '';
+        // Helper to disable/enable a radio + its label
+        function setDisabled(radio, label, disabled, title) {
+            if (!radio) return;
+            radio.disabled = disabled;
+            if (label) {
+                label.style.opacity = disabled ? '0.35' : '';
+                label.style.cursor = disabled ? 'not-allowed' : '';
+                label.title = disabled ? title : '';
             }
         }
 
+        if (homeVal > awayVal) {
+            // Home wins — disable away and draw
+            setDisabled(homeRadio, homeLabel, false, '');
+            setDisabled(awayRadio, awayLabel, true, 'Score says home team wins');
+            setDisabled(drawRadio, drawLabel, true, 'Score says home team wins');
+        } else if (awayVal > homeVal) {
+            // Away wins — disable home and draw
+            setDisabled(homeRadio, homeLabel, true, 'Score says away team wins');
+            setDisabled(awayRadio, awayLabel, false, '');
+            setDisabled(drawRadio, drawLabel, true, 'Score says away team wins');
+        } else {
+            // Equal — only draw is valid
+            setDisabled(homeRadio, homeLabel, true, 'Score is equal — only Draw is possible');
+            setDisabled(awayRadio, awayLabel, true, 'Score is equal — only Draw is possible');
+            setDisabled(drawRadio, drawLabel, false, '');
+        }
+
+        // Auto-select the derived winner
         const radio = document.querySelector(`input[name="winner"][value="${derivedValue}"]`);
         if (radio) {
             radio.checked = true;
