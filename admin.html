@@ -219,7 +219,7 @@
 <body>
 
     <!-- Auth Overlay -->
-    <div id="auth-overlay">
+    <div id="auth-overlay" style="display:none">
         <div class="card">
             <h2>🔐 Admin Access</h2>
             <div class="form-group">
@@ -524,12 +524,7 @@
 
     <script src="config.js"></script>
     <script>
-        // ── Auth ──────────────────────────────────────────────────
-        (function () {
-            if (sessionStorage.getItem('adminAuth') === 'true') {
-                document.getElementById('auth-overlay').style.display = 'none';
-            }
-        })();
+        // ── Auth disabled ─────────────────────────────────────────
 
         function verifyPassword() {
             const input = document.getElementById('auth-password').value;
