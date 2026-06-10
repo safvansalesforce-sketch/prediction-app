@@ -12,6 +12,7 @@ const SHEET_MATCHES = 'Matches';
 const SHEET_PREDICTIONS = 'Predictions';
 const SHEET_LEADERBOARD = 'Leaderboard';
 const SHEET_TOURNAMENTS = 'Tournaments';
+const SHEET_ANNOUNCEMENTS = 'Announcements';
 
 // Helper to get spreadsheet (works for both bound and standalone scripts)
 function getSpreadsheet() {
@@ -46,6 +47,9 @@ function doGet(e) {
     case 'listTournaments':
       result = listTournaments();
       break;
+    case 'getAnnouncements':
+      result = getAnnouncements();
+      break;
     default:
       result = { success: false, message: 'Invalid action' };
   }
@@ -79,6 +83,15 @@ function doPost(e) {
       break;
     case 'submitResult':
       result = submitResult(payload);
+      break;
+    case 'createAnnouncement':
+      result = createAnnouncement(payload);
+      break;
+    case 'deleteAnnouncement':
+      result = deleteAnnouncement(payload);
+      break;
+    case 'resetData':
+      result = resetData(payload);
       break;
     default:
       result = { success: false, message: 'Invalid action' };
@@ -120,10 +133,8 @@ function createMatch(payload) {
       payload.date,
       payload.venue || '',
       payload.group || '',
-      '', '', '', 'open'
+      '', '', '', 'open', 'manual'
     ]);
-
-    return { success: true, message: 'Match created' };
   } catch (err) {
     return { success: false, message: err.message };
   }
@@ -171,7 +182,7 @@ function createBulkMatches(payload) {
 
     if (!sheet) {
       sheet = ss.insertSheet(SHEET_MATCHES);
-      sheet.appendRow(['Match ID', 'Tournament ID', 'Home Team', 'Away Team', 'Date', 'Venue', 'Group', 'Actual Home Goals', 'Actual Away Goals', 'Actual Winner', 'Status']);
+      sheet.appendRow(['Match ID', 'Tournament ID', 'Home Team', 'Away Team', 'Date', 'Venue', 'Group', 'Actual Home Goals', 'Actual Away Goals', 'Actual Winner', 'Status', 'Source']);
     }
 
     const matches = payload.matches || [];
@@ -194,7 +205,7 @@ function createBulkMatches(payload) {
         m.date,
         m.venue || '',
         m.group || '',
-        '', '', '', 'open'
+        '', '', '', 'open', 'wc2026'
       ]);
       created++;
     });
@@ -347,17 +358,22 @@ function submitPrediction(payload) {
             return { success: false, message: 'This match is over. Predictions are no longer accepted.' };
           }
 
-          const matchDate = new Date(matchData[i][4]);
-          const cutoff = new Date(matchDate);
-          cutoff.setHours(18, 0, 0, 0); // 6 PM IST
-
-          // Compare IST times
+          const matchDateRaw = String(matchData[i][4]);
+          const matchDate = new Date(matchDateRaw);
           const istMatchDay = new Date(matchDate.getTime() + istOffset + (matchDate.getTimezoneOffset() * 60000));
-          const istCutoff = new Date(istMatchDay);
-          istCutoff.setHours(18, 0, 0, 0);
+
+          let istCutoff;
+          if (matchDateRaw.includes('T') && matchDateRaw.length > 10) {
+            // Has kickoff time — cutoff is kickoff minus 30 minutes
+            istCutoff = new Date(istMatchDay.getTime() - 30 * 60 * 1000);
+          } else {
+            // Fallback: 6 PM IST
+            istCutoff = new Date(istMatchDay);
+            istCutoff.setHours(18, 0, 0, 0);
+          }
 
           if (istNow >= istCutoff) {
-            return { success: false, message: 'Prediction window has closed (6:00 PM IST).' };
+            return { success: false, message: 'Prediction window has closed (30 minutes before kickoff).' };
           }
           break;
         }
@@ -603,6 +619,14 @@ function maskPhone(phone) {
 function setupSheets() {
   const ss = getSpreadsheet();
 
+  // Announcements sheet
+  let annSheet = ss.getSheetByName(SHEET_ANNOUNCEMENTS);
+  if (!annSheet) {
+    annSheet = ss.insertSheet(SHEET_ANNOUNCEMENTS);
+    annSheet.appendRow(['ID', 'Type', 'Title', 'Text', 'Created At']);
+    annSheet.getRange(1, 1, 1, 5).setFontWeight('bold');
+  }
+
   // Tournaments sheet
   let tournSheet = ss.getSheetByName(SHEET_TOURNAMENTS);
   if (!tournSheet) {
@@ -615,8 +639,8 @@ function setupSheets() {
   let matchSheet = ss.getSheetByName(SHEET_MATCHES);
   if (!matchSheet) {
     matchSheet = ss.insertSheet(SHEET_MATCHES);
-    matchSheet.appendRow(['Match ID', 'Tournament ID', 'Home Team', 'Away Team', 'Date', 'Venue', 'Group', 'Actual Home Goals', 'Actual Away Goals', 'Actual Winner', 'Status']);
-    matchSheet.getRange(1, 1, 1, 11).setFontWeight('bold');
+    matchSheet.appendRow(['Match ID', 'Tournament ID', 'Home Team', 'Away Team', 'Date', 'Venue', 'Group', 'Actual Home Goals', 'Actual Away Goals', 'Actual Winner', 'Status', 'Source']);
+    matchSheet.getRange(1, 1, 1, 12).setFontWeight('bold');
   }
 
   // Predictions sheet
@@ -636,4 +660,142 @@ function setupSheets() {
   }
 
   Logger.log('All sheets created successfully!');
+}
+
+// ============================================================
+// ANNOUNCEMENTS OPERATIONS
+// ============================================================
+
+function getAnnouncements() {
+  try {
+    const ss = getSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_ANNOUNCEMENTS);
+    if (!sheet || sheet.getLastRow() <= 1) {
+      return { success: true, announcements: [] };
+    }
+    const data = sheet.getDataRange().getValues();
+    const announcements = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0]) { // skip empty rows
+        announcements.push({
+          id: data[i][0],
+          type: data[i][1],
+          title: data[i][2],
+          text: data[i][3],
+          createdAt: data[i][4]
+        });
+      }
+    }
+    return { success: true, announcements: announcements };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
+function createAnnouncement(payload) {
+  try {
+    const ss = getSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_ANNOUNCEMENTS);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_ANNOUNCEMENTS);
+      sheet.appendRow(['ID', 'Type', 'Title', 'Text', 'Created At']);
+      sheet.getRange(1, 1, 1, 5).setFontWeight('bold');
+    }
+    const id = 'ann-' + Date.now();
+    sheet.appendRow([id, payload.type, payload.title, payload.text, new Date().toISOString()]);
+    return { success: true, message: 'Announcement added', id: id };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
+function deleteAnnouncement(payload) {
+  try {
+    const ss = getSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_ANNOUNCEMENTS);
+    if (!sheet) return { success: false, message: 'Sheet not found' };
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === payload.id) {
+        sheet.deleteRow(i + 1);
+        return { success: true, message: 'Announcement deleted' };
+      }
+    }
+    return { success: false, message: 'Announcement not found' };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
+// ============================================================
+// RESET / CLEAR DATA
+// ============================================================
+
+function resetData(payload) {
+  try {
+    const target = payload.target;
+    const ss = getSpreadsheet();
+
+    // Helper: keep header row, delete all data rows
+    function clearSheet(sheetName, headerCount) {
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet) return;
+      const lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        sheet.deleteRows(2, lastRow - 1);
+      }
+    }
+
+    if (target === 'predictions') {
+      clearSheet(SHEET_PREDICTIONS);
+      return { success: true, message: 'All predictions cleared.' };
+    }
+
+    if (target === 'leaderboard') {
+      clearSheet(SHEET_LEADERBOARD);
+      return { success: true, message: 'Leaderboard cleared.' };
+    }
+
+    if (target === 'matches') {
+      // Only delete manually-created matches (source = 'manual' or blank)
+      // Preserve wc2026 matches
+      const sheet = ss.getSheetByName(SHEET_MATCHES);
+      if (sheet && sheet.getLastRow() > 1) {
+        const data = sheet.getDataRange().getValues();
+        // Iterate from bottom to avoid index shifting
+        for (let i = data.length - 1; i >= 1; i--) {
+          const source = String(data[i][11] || '').toLowerCase();
+          if (source !== 'wc2026') {
+            sheet.deleteRow(i + 1);
+          }
+        }
+      }
+      return { success: true, message: 'Manually created matches cleared. WC2026 matches preserved.' };
+    }
+
+    if (target === 'announcements') {
+      clearSheet(SHEET_ANNOUNCEMENTS);
+      return { success: true, message: 'All announcements cleared.' };
+    }
+
+    if (target === 'all') {
+      clearSheet(SHEET_PREDICTIONS);
+      clearSheet(SHEET_LEADERBOARD);
+      // For matches in 'all', also only clear manual ones
+      const matchSheet = ss.getSheetByName(SHEET_MATCHES);
+      if (matchSheet && matchSheet.getLastRow() > 1) {
+        const mData = matchSheet.getDataRange().getValues();
+        for (let i = mData.length - 1; i >= 1; i--) {
+          const src = String(mData[i][11] || '').toLowerCase();
+          if (src !== 'wc2026') matchSheet.deleteRow(i + 1);
+        }
+      }
+      clearSheet(SHEET_ANNOUNCEMENTS);
+      return { success: true, message: 'All data cleared. WC2026 matches preserved.' };
+    }
+
+    return { success: false, message: 'Unknown reset target: ' + target };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
 }
