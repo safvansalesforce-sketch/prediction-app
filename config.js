@@ -8,7 +8,7 @@ const CONFIG = {
 
     // ── Admin Auth ─────────────────────────────────────────────
     // Password shown on the admin page login screen
-    ADMIN_PASSWORD: 'worldcup2026admin',   // ← change this
+    ADMIN_PASSWORD: 'admin123',   // ← change this
     // Secret token sent with every admin API request — must match ADMIN_TOKEN in Code.gs
     ADMIN_TOKEN: 'wc2026-secret-token-changeme',  // ← change this (use a long random string)
 
