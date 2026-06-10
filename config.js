@@ -6,8 +6,9 @@ const CONFIG = {
     // Replace this after deploying your Google Apps Script
     APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxcmni4N20zpo-Ch7tIJ1Wo8QRRNegOKdye5dRJ_VX4Ze1HlEQ-vrKtYybBDMtuT-w/exec',
 
-    // Prediction cutoff time (6:00 PM IST = 12:30 UTC)
-    CUTOFF_HOUR_IST: 18, // 6 PM in 24-hour format
+    // Fallback cutoff time — used only when match has no kickoff time set
+    // When kickoff time IS set, cutoff = kickoff - 30 minutes automatically
+    CUTOFF_HOUR_IST: 18,
     CUTOFF_MINUTE_IST: 0,
 
     // Flag API - using flagcdn.com (free, no API key needed)
@@ -129,6 +130,33 @@ const CONFIG = {
     // Exhibition Match
     EXHIBITION_MATCHES: [
         { homeTeam: 'Argentina', awayTeam: 'Brazil', date: '2026-06-10', venue: 'Exhibition Match', group: '' }
+    ],
+
+    // =============================================
+    // ANNOUNCEMENTS - Edit these freely!
+    // Types: 'announce' | 'fun' | 'tip' | 'hot'
+    // =============================================
+    ANNOUNCEMENTS: [
+        {
+            type: 'announce',
+            title: '📢 Advertise Here!',
+            text: 'Want your brand on this ticker? For sponsorship & ads, contact Siva or Safvan! 🤝'
+        },
+        {
+            type: 'hot',
+            title: '🔥 ബ്രേക്കിംഗ് ന്യൂസ്!',
+            text: 'യൂനാസ് ഈ ആഴ്ച 5 ദിവസവും ഓഫീസിൽ വന്നു! ചരിത്രം സൃഷ്ടിച്ചു! 🎉'
+        },
+        {
+            type: 'hot',
+            title: '🚨 BREAKING',
+            text: 'Local man predicts all 48 World Cup matches correctly using astrology. Scientists baffled. 🔮⚽'
+        },
+        {
+            type: 'fun',
+            title: '😂 Fun Fact',
+            text: 'VAR was invented to make everyone angry at the same time, regardless of which team they support. 📺😡'
+        }
     ],
 
     // FIFA World Cup 2026 Group Stage Matches
