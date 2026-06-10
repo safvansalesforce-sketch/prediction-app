@@ -231,6 +231,7 @@
 
             <div id="status-msg"></div>
             <div id="link-output" class="link-output" style="display:none;"></div>
+            <div id="matchid-output" class="link-output" style="display:none;"></div>
         </div>
 
         <!-- Enter Results -->
@@ -252,10 +253,10 @@
                 </div>
                 <div class="form-group">
                     <label>Winner</label>
+                    <small style="color:#aaa;">Auto-selects based on goals entered</small>
                     <select id="result-winner">
                         <option value="draw">Draw</option>
                     </select>
-                    <small style="color:#aaa;">Options update when Match ID is entered</small>
                 </div>
                 <button class="btn btn-success" onclick="submitResult()">Save Result</button>
             </div>
@@ -268,6 +269,41 @@
             <button class="btn btn-primary" onclick="loadMatches()" style="margin-bottom:15px;">Refresh Matches</button>
             <div id="matches-list" class="match-list">
                 <p style="color:#aaa;">Click "Refresh Matches" to load</p>
+            </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="card">
+            <h2>🏆 Leaderboard</h2>
+            <button class="btn btn-primary" onclick="loadLeaderboard()" style="margin-bottom:15px;">Refresh Leaderboard</button>
+            <table id="admin-leaderboard" style="width:100%; border-collapse:collapse; display:none;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.2);">
+                        <th style="padding:8px; text-align:left; color:#ffd200;">Rank</th>
+                        <th style="padding:8px; text-align:left; color:#ffd200;">Name</th>
+                        <th style="padding:8px; text-align:left; color:#ffd200;">Points</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-leaderboard-body"></tbody>
+            </table>
+            <p id="leaderboard-empty" style="color:#aaa;">Click "Refresh Leaderboard" to load</p>
+        </div>
+
+        <!-- Active Predictions -->
+        <div class="card">
+            <h2>📊 Active Predictions</h2>
+            <div class="form-row" style="margin-bottom:15px;">
+                <div class="form-group">
+                    <label>Match ID</label>
+                    <input type="text" id="predictions-match-id" placeholder="Enter match ID (or leave empty for all)">
+                </div>
+                <div class="form-group" style="display:flex; align-items:end;">
+                    <button class="btn btn-primary" onclick="loadPredictions()">Load Predictions</button>
+                </div>
+            </div>
+            <div id="predictions-count" style="color:#aaa; font-size:0.85rem; margin-bottom:10px;"></div>
+            <div id="predictions-list" style="max-height:400px; overflow-y:auto;">
+                <p style="color:#aaa;">Enter a match ID and click "Load Predictions"</p>
             </div>
         </div>
     </div>
@@ -470,6 +506,12 @@
                         <a href="${link}" target="_blank">${link}</a>
                         <button class="copy-btn" onclick="copyLink('${link}')">📋 Copy</button>
                     `;
+                    const matchIdOutput = document.getElementById('matchid-output');
+                    matchIdOutput.style.display = 'block';
+                    matchIdOutput.innerHTML = `
+                        <strong>Match ID:</strong> <code style="color:#ffd200;">${payload.matchId}</code>
+                        <button class="copy-btn" onclick="copyLink('${payload.matchId}')" style="margin-left:10px;">📋 Copy ID</button>
+                    `;
                     showStatus('Match created successfully!', 'success');
                 } else {
                     showStatus(result.message || 'Failed to create match', 'error');
@@ -517,6 +559,29 @@
             winnerSelect.add(new Option('Draw', 'draw'));
             winnerSelect.add(new Option(awayName, awayName));
         });
+
+        // Auto-select winner based on goals entered
+        document.getElementById('result-home').addEventListener('input', autoSelectWinner);
+        document.getElementById('result-away').addEventListener('input', autoSelectWinner);
+
+        function autoSelectWinner() {
+            const homeGoals = parseInt(document.getElementById('result-home').value);
+            const awayGoals = parseInt(document.getElementById('result-away').value);
+            const winnerSelect = document.getElementById('result-winner');
+
+            if (isNaN(homeGoals) || isNaN(awayGoals)) return;
+
+            if (homeGoals > awayGoals) {
+                // Select first option (home team)
+                winnerSelect.selectedIndex = 0;
+            } else if (awayGoals > homeGoals) {
+                // Select last option (away team)
+                winnerSelect.selectedIndex = 2;
+            } else {
+                // Draw
+                winnerSelect.selectedIndex = 1;
+            }
+        }
 
         async function submitResult() {
             const payload = {
@@ -570,7 +635,8 @@
                                     <br><small style="color:#aaa;">${m.date} | ${m.venue || ''} | ID: ${m.matchId}</small>
                                 </div>
                                 <div class="match-actions">
-                                    <button class="copy-btn" onclick="copyLink('${link}')">📋 Copy Link</button>
+                                    <button class="copy-btn" onclick="copyLink('${m.matchId}')">📋 Copy ID</button>
+                                    <button class="copy-btn" onclick="copyLink('${link}')">🔗 Copy Link</button>
                                 </div>
                             </div>
                         `;
@@ -583,9 +649,10 @@
             }
         }
 
-        function copyLink(link) {
-            navigator.clipboard.writeText(link).then(() => {
-                alert('Link copied to clipboard!');
+        function copyLink(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const msg = text.startsWith('http') ? 'Link copied!' : 'Match ID copied!';
+                alert(msg);
             });
         }
 
@@ -594,6 +661,87 @@
             el.textContent = msg;
             el.className = type;
             setTimeout(() => { el.style.display = 'none'; el.className = ''; }, 4000);
+        }
+
+        // Load leaderboard
+        async function loadLeaderboard() {
+            const tournamentId = getSelectedTournament();
+            const emptyEl = document.getElementById('leaderboard-empty');
+            const tableEl = document.getElementById('admin-leaderboard');
+            const tbody = document.getElementById('admin-leaderboard-body');
+
+            emptyEl.textContent = 'Loading...';
+            tableEl.style.display = 'none';
+
+            try {
+                const url = `${CONFIG.APPS_SCRIPT_URL}?action=getLeaderboard&tournamentId=${encodeURIComponent(tournamentId)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success && data.leaderboard.length > 0) {
+                    tbody.innerHTML = data.leaderboard.map((entry, idx) => {
+                        const rank = idx + 1;
+                        const rankDisplay = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+                        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <td style="padding:8px;">${rankDisplay}</td>
+                            <td style="padding:8px;">${entry.name}</td>
+                            <td style="padding:8px; font-weight:600; color:#ffd200;">${entry.points}</td>
+                        </tr>`;
+                    }).join('');
+                    tableEl.style.display = 'table';
+                    emptyEl.style.display = 'none';
+                } else {
+                    emptyEl.textContent = 'No leaderboard data yet.';
+                    emptyEl.style.display = 'block';
+                    tableEl.style.display = 'none';
+                }
+            } catch (err) {
+                emptyEl.textContent = `Error: ${err.message}`;
+                emptyEl.style.color = '#ff6b6b';
+            }
+        }
+
+        // Load predictions
+        async function loadPredictions() {
+            const matchId = document.getElementById('predictions-match-id').value.trim();
+            const listEl = document.getElementById('predictions-list');
+            const countEl = document.getElementById('predictions-count');
+
+            listEl.innerHTML = '<p style="color:#aaa;">Loading...</p>';
+            countEl.textContent = '';
+
+            try {
+                let url = `${CONFIG.APPS_SCRIPT_URL}?action=getPredictions`;
+                if (matchId) {
+                    url += `&matchId=${encodeURIComponent(matchId)}`;
+                }
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success && data.predictions.length > 0) {
+                    countEl.textContent = `Total: ${data.predictions.length} prediction(s)`;
+                    listEl.innerHTML = data.predictions.map(p => `
+                        <div class="match-item">
+                            <div class="match-info">
+                                <strong>${p.userName}</strong> <span style="color:#888; font-size:0.8rem;">(${p.phone})</span>
+                                <br>
+                                <small style="color:#aaa;">
+                                    ${p.homeTeam} <span style="color:#ffd200; font-weight:700;">${p.predictedHomeGoals}</span>
+                                    - <span style="color:#ffd200; font-weight:700;">${p.predictedAwayGoals}</span> ${p.awayTeam}
+                                    | Winner: <span style="color:#2ed573;">${p.predictedWinner}</span>
+                                    ${p.pointsAwarded ? `| <span style="color:#ffd200;">+${p.pointsAwarded} pts</span>` : ''}
+                                </small>
+                                <br><small style="color:#666;">${p.matchId} | ${new Date(p.timestamp).toLocaleString()}</small>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    countEl.textContent = '';
+                    listEl.innerHTML = '<p style="color:#aaa;">No predictions found.</p>';
+                }
+            } catch (err) {
+                listEl.innerHTML = `<p style="color:#ff6b6b;">Error: ${err.message}</p>`;
+            }
         }
     </script>
 </body>
