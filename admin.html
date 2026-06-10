@@ -1392,9 +1392,10 @@
             statusEl.innerHTML = '<span style="color:#ffd200;">Saving...</span>';
             try {
                 const res = await adminPost({ action: 'createAnnouncement', type, title, text });
-                const data = await res.json();
+                const text_ = await res.text();
+                const data = text_ ? JSON.parse(text_) : { success: true };
                 if (!data.success) throw new Error(data.message);
-                statusEl.innerHTML = '<span style="color:#2ed573;">✅ Added!</span>';
+                statusEl.innerHTML = '<span style="color:#2ed573;">✅ Announcement added!</span>';
                 document.getElementById('ann-title').value = '';
                 document.getElementById('ann-text').value = '';
                 cacheInvalidate('announcements');
