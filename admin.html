@@ -147,13 +147,53 @@
         .wc-match-item .wc-match-teams { font-weight: 600; }
         .wc-match-item .wc-match-meta { font-size: 0.8rem; color: #aaa; }
         .wc-match-item .wc-match-group { color: #ffd200; font-size: 0.8rem; margin-left: 8px; }
+
+        /* ── Tab Navigation ── */
+        .tab-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 24px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            padding: 8px;
+        }
+        .tab-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #aaa;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            white-space: nowrap;
+        }
+        .tab-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .tab-btn.active { background: linear-gradient(135deg, #f7971e, #ffd200); color: #1a1a2e; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>⚙️ Admin Panel</h1>
 
+        <nav class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('tab-tournament')">🏆 Tournament</button>
+            <button class="tab-btn" onclick="switchTab('tab-create')">➕ Create Match</button>
+            <button class="tab-btn" onclick="switchTab('tab-results')">⚽ Enter Results</button>
+            <button class="tab-btn" onclick="switchTab('tab-matches')">📋 Matches</button>
+            <button class="tab-btn" onclick="switchTab('tab-leaderboard')">🥇 Leaderboard</button>
+            <button class="tab-btn" onclick="switchTab('tab-predictions')">📊 Predictions</button>
+            <button class="tab-btn" onclick="switchTab('tab-announcements')">📢 Announcements</button>
+            <button class="tab-btn" style="color:#ff6b6b;" onclick="switchTab('tab-reset')">🗑️ Reset</button>
+        </nav>
+
         <!-- Tournament Selection -->
+        <div class="tab-panel active" id="tab-tournament">
         <div class="card">
             <h2>🏆 Tournament</h2>
             <div class="form-row">
@@ -191,8 +231,10 @@
             <div id="tournament-status" style="margin-top:10px;"></div>
             <div id="wc-matches-list" class="wc-match-list"></div>
         </div>
+        </div><!-- /tab-tournament -->
 
         <!-- Create Match -->
+        <div class="tab-panel" id="tab-create">
         <div class="card">
             <h2>Create New Match</h2>
             <form id="create-match-form">
@@ -212,15 +254,21 @@
                         <input type="date" id="match-date" required>
                     </div>
                     <div class="form-group">
-                        <label>Venue (optional)</label>
-                        <input type="text" id="match-venue" placeholder="Stadium, City">
+                        <label>Kickoff Time (IST)</label>
+                        <input type="time" id="match-time" required placeholder="19:30">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
+                        <label>Venue (optional)</label>
+                        <input type="text" id="match-venue" placeholder="Stadium, City">
+                    </div>
+                    <div class="form-group">
                         <label>Group (optional)</label>
                         <input type="text" id="match-group" placeholder="A, B, C...">
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label>Match ID (auto-generated, editable)</label>
                         <input type="text" id="match-id" placeholder="Will be auto-generated">
@@ -233,8 +281,10 @@
             <div id="link-output" class="link-output" style="display:none;"></div>
             <div id="matchid-output" class="link-output" style="display:none;"></div>
         </div>
+        </div><!-- /tab-create -->
 
         <!-- Enter Results -->
+        <div class="tab-panel" id="tab-results">
         <div class="card">
             <h2>Enter Match Results</h2>
             <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">Enter actual scores to calculate leaderboard points</p>
@@ -262,8 +312,10 @@
             </div>
             <div id="result-status" style="margin-top:10px;"></div>
         </div>
+        </div><!-- /tab-results -->
 
         <!-- Existing Matches -->
+        <div class="tab-panel" id="tab-matches">
         <div class="card">
             <h2>Existing Matches</h2>
             <button class="btn btn-primary" onclick="loadMatches()" style="margin-bottom:15px;">Refresh Matches</button>
@@ -271,8 +323,10 @@
                 <p style="color:#aaa;">Click "Refresh Matches" to load</p>
             </div>
         </div>
+        </div><!-- /tab-matches -->
 
         <!-- Leaderboard -->
+        <div class="tab-panel" id="tab-leaderboard">
         <div class="card">
             <h2>🏆 Leaderboard</h2>
             <button class="btn btn-primary" onclick="loadLeaderboard()" style="margin-bottom:15px;">Refresh Leaderboard</button>
@@ -288,8 +342,10 @@
             </table>
             <p id="leaderboard-empty" style="color:#aaa;">Click "Refresh Leaderboard" to load</p>
         </div>
+        </div><!-- /tab-leaderboard -->
 
         <!-- Active Predictions -->
+        <div class="tab-panel" id="tab-predictions">
         <div class="card">
             <h2>📊 Active Predictions</h2>
             <div class="form-row" style="margin-bottom:15px;">
@@ -306,10 +362,137 @@
                 <p style="color:#aaa;">Enter a match ID and click "Load Predictions"</p>
             </div>
         </div>
+        </div><!-- /tab-predictions -->
+
+        <!-- Announcements Manager -->
+        <div class="tab-panel" id="tab-announcements">
+        <div class="card">
+            <h2>📢 Announcements</h2>
+            <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">Add news that scrolls in the live ticker on the main page.</p>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="ann-type">
+                        <option value="announce">📢 Announcement (blue)</option>
+                        <option value="hot">🔥 Hot / Breaking (red)</option>
+                        <option value="fun">😂 Fun / Did you know (amber)</option>
+                        <option value="tip">💡 Tip (green)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="ann-title" placeholder="e.g. 🔥 Breaking News!">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Text / Body</label>
+                <input type="text" id="ann-text" placeholder="Full news text here...">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:5px;">
+                <button class="btn btn-primary" onclick="addAnnouncement()">➕ Add</button>
+                <button class="btn btn-success" onclick="loadAnnouncements()">🔄 Refresh</button>
+            </div>
+            <div id="ann-status" style="margin-top:10px;"></div>
+            <div id="ann-list" style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+                <p style="color:#aaa;">Click "Refresh" to load existing announcements.</p>
+            </div>
+        </div>
+        </div><!-- /tab-announcements -->
+
+        <!-- Reset / Clear Data -->
+        <div class="tab-panel" id="tab-reset">
+        <div class="card">
+            <h2>🗑️ Reset / Clear Data</h2>
+            <p style="color:#ff8080; font-size:0.88rem; margin-bottom:20px;">⚠️ These actions permanently delete records from Google Sheets. They cannot be undone.</p>
+
+            <div style="display:flex; flex-direction:column; gap:14px;">
+
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+                    <div>
+                        <div style="font-weight:600;">Predictions</div>
+                        <div style="color:#aaa; font-size:0.82rem;">Clear all user predictions (keeps header row)</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="resetData('predictions')">Clear</button>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+                    <div>
+                        <div style="font-weight:600;">Leaderboard</div>
+                        <div style="color:#aaa; font-size:0.82rem;">Clear all leaderboard scores (keeps header row)</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="resetData('leaderboard')">Clear</button>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+                    <div>
+                        <div style="font-weight:600;">Matches</div>
+                        <div style="color:#aaa; font-size:0.82rem;">Clear manually created matches only (WC 2026 matches are kept)</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="resetData('matches')">Clear</button>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+                    <div>
+                        <div style="font-weight:600;">Announcements</div>
+                        <div style="color:#aaa; font-size:0.82rem;">Delete all ticker announcements</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="resetData('announcements')">Clear</button>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:rgba(255,40,40,0.10); border-radius:10px; border:1px solid rgba(255,80,80,0.30);">
+                    <div>
+                        <div style="font-weight:700; color:#ff6b6b;">⚠️ Reset Everything</div>
+                        <div style="color:#aaa; font-size:0.82rem;">Clear Predictions + Leaderboard + Manual Matches + Announcements (WC2026 matches kept)</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="resetData('all')">Reset All</button>
+                </div>
+
+            </div>
+            <div id="reset-status" style="margin-top:16px;"></div>
+        </div>
+        </div><!-- /tab-reset -->
+
     </div>
 
     <script src="config.js"></script>
     <script>
+        function switchTab(id) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelector(`.tab-btn[onclick="switchTab('${id}')"]`).classList.add('active');
+        }
+
+        async function resetData(target) {
+            const labels = {
+                predictions: 'all Predictions',
+                leaderboard: 'the Leaderboard',
+                matches: 'all Matches',
+                announcements: 'all Announcements',
+                all: 'EVERYTHING (Predictions, Leaderboard, Matches, Announcements)'
+            };
+            const confirmed = confirm(`⚠️ Are you sure you want to clear ${labels[target]}?\n\nThis CANNOT be undone.`);
+            if (!confirmed) return;
+
+            const statusEl = document.getElementById('reset-status');
+            statusEl.innerHTML = '<span style="color:#ffd200;">⏳ Clearing...</span>';
+
+            try {
+                const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ action: 'resetData', target })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    statusEl.innerHTML = `<span style="color:#2ed573;">✅ ${data.message}</span>`;
+                } else {
+                    statusEl.innerHTML = `<span style="color:#ff6b6b;">❌ ${data.message}</span>`;
+                }
+            } catch (err) {
+                statusEl.innerHTML = `<span style="color:#ff6b6b;">❌ Network error: ${err.message}</span>`;
+            }
+        }
         // Populate tournament select
         const tournamentSelect = document.getElementById('tournament-select');
         CONFIG.TOURNAMENTS.forEach(t => {
@@ -359,6 +542,7 @@
             document.getElementById('home-team').value = match.homeTeam;
             document.getElementById('away-team').value = match.awayTeam;
             document.getElementById('match-date').value = match.date;
+            document.getElementById('match-time').value = match.time || '19:30';
             document.getElementById('match-venue').value = match.venue || '';
             document.getElementById('match-group').value = match.group || '';
             document.getElementById('match-id').value = matchId;
@@ -370,7 +554,7 @@
                 tournamentId: tournamentId,
                 homeTeam: match.homeTeam,
                 awayTeam: match.awayTeam,
-                date: match.date,
+                date: match.date + 'T' + (match.time || '19:30'),
                 venue: match.venue || '',
                 group: match.group || ''
             };
@@ -483,6 +667,7 @@
             homeSelect.value = match.homeTeam;
             awaySelect.value = match.awayTeam;
             document.getElementById('match-date').value = match.date;
+            document.getElementById('match-time').value = match.time || '';
             document.getElementById('match-venue').value = match.venue || '';
             document.getElementById('match-group').value = match.group || '';
 
@@ -537,7 +722,7 @@
                 tournamentId: tournamentId,
                 homeTeam: homeSelect.value,
                 awayTeam: awaySelect.value,
-                date: document.getElementById('match-date').value,
+                date: document.getElementById('match-date').value + 'T' + (document.getElementById('match-time').value || '19:30'),
                 venue: document.getElementById('match-venue').value.trim(),
                 group: document.getElementById('match-group').value.trim()
             };
@@ -800,6 +985,83 @@
                 }
             } catch (err) {
                 listEl.innerHTML = `<p style="color:#ff6b6b;">Error: ${err.message}</p>`;
+            }
+        }
+
+        // ── Announcements ──────────────────────────────────────
+        const typeColors = { announce: '#60a5fa', hot: '#f87171', fun: '#f59e0b', tip: '#34d399' };
+        const typeLabels = { announce: '📢 Announcement', hot: '🔥 Hot', fun: '😂 Fun', tip: '💡 Tip' };
+
+        async function loadAnnouncements() {
+            const listEl = document.getElementById('ann-list');
+            listEl.innerHTML = '<p style="color:#aaa;">Loading...</p>';
+            try {
+                const res = await fetch(`${CONFIG.APPS_SCRIPT_URL}?action=getAnnouncements`);
+                const data = await res.json();
+                if (!data.success) throw new Error(data.message);
+                if (!data.announcements.length) {
+                    listEl.innerHTML = '<p style="color:#aaa;">No announcements yet.</p>';
+                    return;
+                }
+                listEl.innerHTML = data.announcements.map(a => `
+                    <div style="display:flex; justify-content:space-between; align-items:center;
+                                padding:10px 14px; background:rgba(255,255,255,0.04);
+                                border-radius:8px; border-left:3px solid ${typeColors[a.type] || '#60a5fa'};">
+                        <div>
+                            <span style="color:${typeColors[a.type] || '#60a5fa'}; font-size:0.75rem; font-weight:700;">
+                                ${typeLabels[a.type] || a.type}
+                            </span>
+                            <div style="font-weight:600; margin:2px 0;">${a.title}</div>
+                            <div style="color:#aaa; font-size:0.82rem;">${a.text}</div>
+                        </div>
+                        <button class="btn btn-danger" style="flex-shrink:0; padding:6px 12px; font-size:0.78rem; margin-left:12px;"
+                            onclick="deleteAnnouncement('${a.id}')">🗑</button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                listEl.innerHTML = `<p style="color:#ff6b6b;">Error: ${err.message}</p>`;
+            }
+        }
+
+        async function addAnnouncement() {
+            const type  = document.getElementById('ann-type').value;
+            const title = document.getElementById('ann-title').value.trim();
+            const text  = document.getElementById('ann-text').value.trim();
+            const statusEl = document.getElementById('ann-status');
+
+            if (!title || !text) {
+                statusEl.innerHTML = '<span style="color:#ff6b6b;">Please fill in both title and text.</span>';
+                return;
+            }
+            statusEl.innerHTML = '<span style="color:#ffd200;">Saving...</span>';
+            try {
+                const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+                    method: 'POST', redirect: 'follow',
+                    body: JSON.stringify({ action: 'createAnnouncement', type, title, text })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.message);
+                statusEl.innerHTML = '<span style="color:#2ed573;">✅ Added!</span>';
+                document.getElementById('ann-title').value = '';
+                document.getElementById('ann-text').value = '';
+                loadAnnouncements();
+            } catch (err) {
+                statusEl.innerHTML = `<span style="color:#ff6b6b;">Error: ${err.message}</span>`;
+            }
+        }
+
+        async function deleteAnnouncement(id) {
+            if (!confirm('Delete this announcement?')) return;
+            try {
+                const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+                    method: 'POST', redirect: 'follow',
+                    body: JSON.stringify({ action: 'deleteAnnouncement', id })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.message);
+                loadAnnouncements();
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
         }
     </script>
