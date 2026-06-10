@@ -4,7 +4,7 @@
 const CONFIG = {
     // Google Apps Script Web App URL (deployed URL)
     // Replace this after deploying your Google Apps Script
-    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyWMYVmbffNTHpyIz-L2XD5bJcqS5dby8Er1aT7dq2G8mV3f_oarzo4ymNOlBuCJk8L/exec',
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwkPDbIOh0C8bDHkRq1-22j1kLhk9yDjJ8K9cDgTnOFIlaRzYuw5HtTvVX6lSH2c_yD/exec',
 
     // ── Admin Auth ─────────────────────────────────────────────
     // Password shown on the admin page login screen
