@@ -4,10 +4,10 @@
 const CONFIG = {
     // Google Apps Script Web App URL (deployed URL)
     // Replace this after deploying your Google Apps Script
-    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw2EZbF6wQJAPzPf2y3FEsk99F6J5NScfWucGhVDL7GTsBlxOmZwHsMVF6FwXVCNQM/exec',
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxcmni4N20zpo-Ch7tIJ1Wo8QRRNegOKdye5dRJ_VX4Ze1HlEQ-vrKtYybBDMtuT-w/exec',
 
-    // Prediction cutoff time (9:00 PM IST = 15:30 UTC)
-    CUTOFF_HOUR_IST: 21, // 9 PM in 24-hour format
+    // Prediction cutoff time (6:00 PM IST = 12:30 UTC)
+    CUTOFF_HOUR_IST: 18, // 6 PM in 24-hour format
     CUTOFF_MINUTE_IST: 0,
 
     // Flag API - using flagcdn.com (free, no API key needed)
@@ -120,15 +120,15 @@ const CONFIG = {
     // Tournament definitions
     TOURNAMENTS: [
         {
-            id: 'test',
-            name: 'Test Tournament',
-            description: 'A test tournament for trying out the app'
-        },
-        {
             id: 'worldcup-2026',
             name: 'FIFA World Cup 2026',
             description: 'FIFA World Cup 2026 - USA, Mexico & Canada'
         }
+    ],
+
+    // Exhibition Match
+    EXHIBITION_MATCHES: [
+        { homeTeam: 'Argentina', awayTeam: 'Brazil', date: '2026-06-10', venue: 'Exhibition Match', group: '' }
     ],
 
     // FIFA World Cup 2026 Group Stage Matches

@@ -46,6 +46,17 @@
             matchData = data.match;
             hideLoading();
 
+            // Check if match result already published
+            if (matchData.status === 'completed') {
+                closedMessage.classList.remove('hidden');
+                document.querySelector('#closed-message h2').textContent = '🏁 Match Over';
+                document.querySelector('#closed-message p').textContent = 'The result for this match has been published. Predictions are closed.';
+                if (data.leaderboard && data.leaderboard.length > 0) {
+                    renderLeaderboard(data.leaderboard);
+                }
+                return;
+            }
+
             // Check if prediction window is open
             if (isPredictionClosed()) {
                 closedMessage.classList.remove('hidden');
@@ -208,6 +219,13 @@
             return;
         }
 
+        // Check if already submitted (localStorage check)
+        const submissionKey = `prediction_${matchId}_${userPhone}`;
+        if (localStorage.getItem(submissionKey)) {
+            alert('You have already submitted a prediction for this match.');
+            return;
+        }
+
         // Check if predictions are still open
         if (isPredictionClosed()) {
             alert('Sorry, predictions are now closed for this match!');
@@ -242,8 +260,12 @@
             const result = await response.json();
 
             if (result.success) {
+                // Mark as submitted in localStorage
+                localStorage.setItem(submissionKey, 'true');
                 form.classList.add('hidden');
                 successMessage.classList.remove('hidden');
+                showConfetti();
+                showFunMessage();
             } else {
                 alert(result.message || 'Failed to submit prediction. Please try again.');
                 submitBtn.disabled = false;
@@ -271,5 +293,73 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // Fun messages after submission
+    function showFunMessage() {
+        const messages = [
+            "🔮 The Oracle has spoken!",
+            "⚽ Bold prediction! Let's see if you're right!",
+            "🧠 Big brain energy! Good luck!",
+            "🎲 The football gods are watching...",
+            "🦁 Brave pick! Fortune favors the bold!",
+            "🚀 Prediction locked in! To the moon!",
+            "🏟️ The crowd goes wild for your prediction!",
+            "🎯 Aim true! Let's see how this plays out!",
+            "🌟 A star predictor is born!",
+            "🔥 That's a spicy prediction!"
+        ];
+        const funEl = document.getElementById('fun-message');
+        if (funEl) {
+            funEl.textContent = messages[Math.floor(Math.random() * messages.length)];
+        }
+    }
+
+    // Confetti effect
+    function showConfetti() {
+        const canvas = document.getElementById('confetti-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const pieces = [];
+        const colors = ['#ffd200', '#f7971e', '#2ed573', '#ff6b6b', '#7bed9f', '#70a1ff', '#ffffff'];
+
+        for (let i = 0; i < 150; i++) {
+            pieces.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                w: Math.random() * 10 + 5,
+                h: Math.random() * 6 + 3,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speed: Math.random() * 3 + 2,
+                angle: Math.random() * Math.PI * 2,
+                spin: (Math.random() - 0.5) * 0.2
+            });
+        }
+
+        let frame = 0;
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pieces.forEach(p => {
+                p.y += p.speed;
+                p.x += Math.sin(p.angle) * 0.5;
+                p.angle += p.spin;
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.angle);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            });
+            frame++;
+            if (frame < 180) {
+                requestAnimationFrame(animate);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+        animate();
     }
 })();

@@ -5,20 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Cup Prediction</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Animated background particles -->
+    <div class="bg-particles">
+        <div class="particle">⚽</div>
+        <div class="particle">🏆</div>
+        <div class="particle">⚽</div>
+        <div class="particle">🥅</div>
+        <div class="particle">⚽</div>
+        <div class="particle">🏆</div>
+        <div class="particle">⚽</div>
+        <div class="particle">🥅</div>
+    </div>
+
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1>⚽ World Cup 2026 Prediction</h1>
+            <div class="trophy-bounce">🏆</div>
+            <h1>World Cup 2026 Prediction</h1>
+            <p class="tagline">Predict. Compete. Glory awaits!</p>
             <div id="countdown" class="countdown"></div>
         </header>
 
         <!-- Prediction Closed Message -->
         <div id="closed-message" class="closed-message hidden">
             <h2>🚫 Predictions Closed</h2>
-            <p>The prediction window for this match has closed (9:00 PM IST).</p>
+            <p>The prediction window for this match has closed (6:00 PM IST).</p>
         </div>
 
         <!-- Match Info -->
@@ -28,7 +42,10 @@
                     <img id="flag-home" class="flag" src="" alt="Home Team Flag">
                     <h2 id="team-home-name">Team A</h2>
                 </div>
-                <div class="vs">VS</div>
+                <div class="vs-container">
+                    <div class="vs-ball">⚽</div>
+                    <span class="vs">VS</span>
+                </div>
                 <div class="team team-away">
                     <img id="flag-away" class="flag" src="" alt="Away Team Flag">
                     <h2 id="team-away-name">Team B</h2>
@@ -42,7 +59,8 @@
 
             <!-- Prediction Form -->
             <form id="prediction-form" class="prediction-form">
-                <h3>Your Prediction</h3>
+                <h3>🎯 Your Prediction</h3>
+                <p class="form-subtitle">Think you can predict the score?</p>
 
                 <div class="score-section">
                     <div class="score-input">
@@ -57,7 +75,7 @@
                 </div>
 
                 <div class="winner-section">
-                    <label>Who will win?</label>
+                    <label>Who will win? 🤔</label>
                     <div class="winner-options">
                         <label class="radio-card">
                             <input type="radio" name="winner" id="radio-home" required>
@@ -65,7 +83,7 @@
                         </label>
                         <label class="radio-card">
                             <input type="radio" name="winner" value="draw">
-                            <span>Draw</span>
+                            <span>Draw 🤝</span>
                         </label>
                         <label class="radio-card">
                             <input type="radio" name="winner" id="radio-away">
@@ -86,13 +104,21 @@
                     </div>
                 </div>
 
-                <button type="submit" id="submit-btn" class="submit-btn">Submit Prediction</button>
+                <button type="submit" id="submit-btn" class="submit-btn">
+                    <span>⚡ Submit Prediction</span>
+                </button>
+
+                <div class="scoring-info">
+                    <p>🎯 Exact Score = <strong>5 pts</strong> | ✅ Correct Winner = <strong>3 pts</strong></p>
+                </div>
             </form>
 
             <!-- Success Message -->
             <div id="success-message" class="success-message hidden">
-                <h3>✅ Prediction Submitted!</h3>
-                <p>Your prediction has been recorded. Good luck!</p>
+                <div class="success-icon">🎉</div>
+                <h3>Prediction Submitted!</h3>
+                <p>Your prediction has been recorded. May the odds be in your favor!</p>
+                <div class="fun-message" id="fun-message"></div>
             </div>
         </div>
 
@@ -124,6 +150,9 @@
             <p>Invalid match link or match does not exist.</p>
         </div>
     </div>
+
+    <!-- Confetti canvas -->
+    <canvas id="confetti-canvas"></canvas>
 
     <script src="config.js"></script>
     <script src="script.js"></script>

@@ -164,8 +164,8 @@
                     </select>
                 </div>
                 <div class="form-group" style="display:flex; align-items:end; gap:10px;">
-                    <button class="btn btn-primary" onclick="setupTournaments()">Setup Tournaments</button>
                     <button class="btn btn-success" onclick="loadWorldCupMatches()">Load WC 2026 Matches</button>
+                    <button class="btn btn-primary" onclick="loadExhibitionMatch()">Load Exhibition Match</button>
                 </div>
             </div>
             <div class="form-group" id="group-filter-container" style="display:none; margin-top:10px;">
@@ -346,6 +346,65 @@
                 statusEl.innerHTML = '<span style="color:#2ed573;">Tournaments created successfully!</span>';
             } catch (err) {
                 statusEl.innerHTML = `<span style="color:#ff6b6b;">Error: ${err.message}</span>`;
+            }
+        }
+
+        // Load Exhibition Match — auto-fill form and create match
+        async function loadExhibitionMatch() {
+            const match = CONFIG.EXHIBITION_MATCHES[0];
+            const matchId = `${match.homeTeam.toLowerCase().replace(/\s+/g, '-')}-vs-${match.awayTeam.toLowerCase().replace(/\s+/g, '-')}-${match.date}`;
+            const tournamentId = getSelectedTournament() || 'worldcup-2026';
+
+            // Auto-fill form fields
+            document.getElementById('home-team').value = match.homeTeam;
+            document.getElementById('away-team').value = match.awayTeam;
+            document.getElementById('match-date').value = match.date;
+            document.getElementById('match-venue').value = match.venue || '';
+            document.getElementById('match-group').value = match.group || '';
+            document.getElementById('match-id').value = matchId;
+
+            // Create match in backend
+            const payload = {
+                action: 'createMatch',
+                matchId: matchId,
+                tournamentId: tournamentId,
+                homeTeam: match.homeTeam,
+                awayTeam: match.awayTeam,
+                date: match.date,
+                venue: match.venue || '',
+                group: match.group || ''
+            };
+
+            try {
+                const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    const baseUrl = window.location.href.replace('admin.html', 'index.html');
+                    const link = `${baseUrl}?match=${encodeURIComponent(matchId)}`;
+                    const linkOutput = document.getElementById('link-output');
+                    linkOutput.style.display = 'block';
+                    linkOutput.innerHTML = `
+                        <strong>Exhibition Match Link:</strong><br>
+                        <a href="${link}" target="_blank">${link}</a>
+                        <button class="copy-btn" onclick="copyLink('${link}')">📋 Copy</button>
+                    `;
+                    const matchIdOutput = document.getElementById('matchid-output');
+                    matchIdOutput.style.display = 'block';
+                    matchIdOutput.innerHTML = `
+                        <strong>Match ID:</strong> <code style="color:#ffd200;">${matchId}</code>
+                        <button class="copy-btn" onclick="copyLink('${matchId}')" style="margin-left:10px;">📋 Copy ID</button>
+                    `;
+                    showStatus('Exhibition match (Argentina vs Brazil) created!', 'success');
+                } else {
+                    showStatus(result.message || 'Failed to create exhibition match', 'error');
+                }
+            } catch (err) {
+                showStatus('Network error: ' + err.message, 'error');
             }
         }
 
