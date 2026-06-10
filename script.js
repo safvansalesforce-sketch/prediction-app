@@ -15,12 +15,15 @@
     const matchSection = document.getElementById('match-section');
     const closedMessage = document.getElementById('closed-message');
     const leaderboardSection = document.getElementById('leaderboard-section');
+    const leaderboardTeaser = document.getElementById('leaderboard-teaser');
     const countdownEl = document.getElementById('countdown');
     const form = document.getElementById('prediction-form');
     const successMessage = document.getElementById('success-message');
+    const formError = document.getElementById('form-error');
 
     // State
     let matchData = null;
+    let countdownInterval = null;
 
     // Initialize
     init();
@@ -74,7 +77,13 @@
             // Show leaderboard if available (from match 2 onwards)
             if (data.leaderboard && data.leaderboard.length > 0) {
                 renderLeaderboard(data.leaderboard);
+                leaderboardTeaser.classList.remove('hidden');
             }
+
+            // Set up stepper buttons
+            initSteppers();
+            initAutoWinner();
+            prefillUserInfo();
         } catch (error) {
             console.error('Error fetching match:', error);
             showError();
@@ -91,10 +100,17 @@
         const matchDate = new Date(matchData.date);
         const matchDateIST = new Date(matchDate.getTime() + (matchDate.getTimezoneOffset() * 60000) + istOffset);
 
-        // Cutoff: 9 PM IST on match day
+        // Cutoff: match kickoff time (from date field) minus 30 minutes
+        // date field may be 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM'
         const cutoff = new Date(matchDateIST);
+        const rawDate = String(matchData.date);
+        if (rawDate.includes('T') && rawDate.length > 10) {
+            // Has time component — use kickoff - 30 min
+            const kickoff = new Date(matchDateIST);
+            return istNow >= new Date(kickoff.getTime() - 30 * 60 * 1000);
+        }
+        // Fallback: fixed config time
         cutoff.setHours(CONFIG.CUTOFF_HOUR_IST, CONFIG.CUTOFF_MINUTE_IST, 0, 0);
-
         return istNow >= cutoff;
     }
 
@@ -103,17 +119,25 @@
         const istOffset = 5.5 * 60 * 60 * 1000;
         const matchDateIST = new Date(matchDate.getTime() + (matchDate.getTimezoneOffset() * 60000) + istOffset);
 
-        const cutoff = new Date(matchDateIST);
-        cutoff.setHours(CONFIG.CUTOFF_HOUR_IST, CONFIG.CUTOFF_MINUTE_IST, 0, 0);
+        let cutoffIST;
+        const rawDate = String(matchData.date);
+        if (rawDate.includes('T') && rawDate.length > 10) {
+            // Use kickoff time - 30 minutes
+            cutoffIST = new Date(matchDateIST.getTime() - 30 * 60 * 1000);
+        } else {
+            // Fallback: fixed config time
+            cutoffIST = new Date(matchDateIST);
+            cutoffIST.setHours(CONFIG.CUTOFF_HOUR_IST, CONFIG.CUTOFF_MINUTE_IST, 0, 0);
+        }
 
         // Convert back to local time
-        const localCutoff = new Date(cutoff.getTime() - (new Date().getTimezoneOffset() * 60000) - istOffset);
+        const localCutoff = new Date(cutoffIST.getTime() - (new Date().getTimezoneOffset() * 60000) - istOffset);
         return localCutoff;
     }
 
     function startCountdown() {
         updateCountdown();
-        setInterval(updateCountdown, 1000);
+        countdownInterval = setInterval(updateCountdown, 1000);
     }
 
     function updateCountdown() {
@@ -122,7 +146,9 @@
         const diff = cutoff - now;
 
         if (diff <= 0) {
+            clearInterval(countdownInterval);
             countdownEl.textContent = '⏰ Predictions are now closed!';
+            countdownEl.className = 'countdown urgent';
             form.classList.add('hidden');
             closedMessage.classList.remove('hidden');
             return;
@@ -133,6 +159,99 @@
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
         countdownEl.textContent = `⏰ Predictions close in: ${hours}h ${minutes}m ${seconds}s`;
+
+        if (diff < 10 * 60 * 1000) {
+            countdownEl.className = 'countdown critical';
+        } else if (diff < 60 * 60 * 1000) {
+            countdownEl.className = 'countdown urgent';
+        } else {
+            countdownEl.className = 'countdown';
+        }
+    }
+
+    function stepOnce(btn) {
+        const targetId = btn.dataset.target;
+        const input = document.getElementById(targetId);
+        const display = document.getElementById(targetId + '-display');
+        let val = parseInt(input.value) || 0;
+        if (btn.classList.contains('stepper-plus')) {
+            val = Math.min(val + 1, 20);
+        } else {
+            val = Math.max(val - 1, 0);
+        }
+        input.value = val;
+        display.textContent = val;
+        syncWinnerFromScores();
+    }
+
+    function initSteppers() {
+        document.querySelectorAll('.stepper-btn').forEach(btn => {
+            let holdTimer = null;
+            let holdInterval = null;
+            let suppressNextClick = false;
+
+            // Regular click (also handles keyboard Enter/Space)
+            btn.addEventListener('click', () => {
+                if (suppressNextClick) { suppressNextClick = false; return; }
+                stepOnce(btn);
+            });
+
+            // Long-press: fast-increment after 500ms hold
+            btn.addEventListener('pointerdown', function () {
+                holdTimer = setTimeout(() => {
+                    holdInterval = setInterval(() => {
+                        stepOnce(btn);
+                        suppressNextClick = true;
+                    }, 80);
+                }, 500);
+            });
+
+            const cancelHold = () => {
+                clearTimeout(holdTimer);
+                clearInterval(holdInterval);
+                holdTimer = null;
+                holdInterval = null;
+            };
+            btn.addEventListener('pointerup', cancelHold);
+            btn.addEventListener('pointerleave', cancelHold);
+            btn.addEventListener('pointercancel', cancelHold);
+        });
+    }
+
+    function initAutoWinner() {
+        syncWinnerFromScores();
+    }
+
+    function syncWinnerFromScores() {
+        const homeVal = parseInt(document.getElementById('goals-home').value) || 0;
+        const awayVal = parseInt(document.getElementById('goals-away').value) || 0;
+        const hint = document.getElementById('winner-hint');
+        let derivedValue;
+        if (homeVal > awayVal) {
+            derivedValue = document.getElementById('radio-home').value;
+        } else if (awayVal > homeVal) {
+            derivedValue = document.getElementById('radio-away').value;
+        } else {
+            derivedValue = 'draw';
+        }
+        const radio = document.querySelector(`input[name="winner"][value="${derivedValue}"]`);
+        if (radio) {
+            radio.checked = true;
+            if (hint) hint.classList.remove('hidden');
+        }
+    }
+
+    function showFormError(msg) {
+        if (!formError) return;
+        formError.textContent = msg;
+        formError.classList.remove('hidden');
+        formError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function clearFormError() {
+        if (!formError) return;
+        formError.textContent = '';
+        formError.classList.add('hidden');
     }
 
     function renderMatch() {
@@ -141,9 +260,13 @@
         const homeCode = CONFIG.COUNTRY_CODES[matchData.homeTeam] || 'un';
         const awayCode = CONFIG.COUNTRY_CODES[matchData.awayTeam] || 'un';
 
-        // Set flags
-        document.getElementById('flag-home').src = `${CONFIG.FLAG_API}${homeCode}.png`;
-        document.getElementById('flag-away').src = `${CONFIG.FLAG_API}${awayCode}.png`;
+        // Set flags with onerror fallback
+        const flagHome = document.getElementById('flag-home');
+        const flagAway = document.getElementById('flag-away');
+        flagHome.onerror = function () { this.style.visibility = 'hidden'; };
+        flagAway.onerror = function () { this.style.visibility = 'hidden'; };
+        flagHome.src = `${CONFIG.FLAG_API}${homeCode}.png`;
+        flagAway.src = `${CONFIG.FLAG_API}${awayCode}.png`;
 
         // Set team names
         document.getElementById('team-home-name').textContent = matchData.homeTeam;
@@ -199,43 +322,47 @@
         const userName = document.getElementById('user-name').value.trim();
         const userPhone = document.getElementById('user-phone').value.trim();
 
+        clearFormError();
+
         if (isNaN(goalsHome) || isNaN(goalsAway)) {
-            alert('Please enter valid goal scores.');
+            showFormError('Please enter valid goal scores.');
             return;
         }
 
         if (!winner) {
-            alert('Please select who will win.');
+            showFormError('Please select who will win.');
             return;
         }
 
         if (!userName) {
-            alert('Please enter your name.');
+            showFormError('Please enter your name.');
+            document.getElementById('user-name').focus();
             return;
         }
 
         if (!/^[0-9]{10}$/.test(userPhone)) {
-            alert('Please enter a valid 10-digit phone number.');
+            showFormError('Please enter a valid 10-digit phone number.');
+            document.getElementById('user-phone').focus();
             return;
         }
 
         // Check if already submitted (localStorage check)
         const submissionKey = `prediction_${matchId}_${userPhone}`;
         if (localStorage.getItem(submissionKey)) {
-            alert('You have already submitted a prediction for this match.');
+            showFormError('You have already submitted a prediction for this match.');
             return;
         }
 
         // Check if predictions are still open
         if (isPredictionClosed()) {
-            alert('Sorry, predictions are now closed for this match!');
+            showFormError('Sorry, predictions are now closed for this match!');
             return;
         }
 
-        // Disable button
+        // Disable button and show spinner
         const submitBtn = document.getElementById('submit-btn');
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Submitting...';
+        submitBtn.innerHTML = '<span class="btn-spinner"></span><span>Submitting…</span>';
 
         try {
             const payload = {
@@ -260,26 +387,150 @@
             const result = await response.json();
 
             if (result.success) {
-                // Mark as submitted in localStorage
+                // Mark as submitted and save user info for future prefill
                 localStorage.setItem(submissionKey, 'true');
+                localStorage.setItem('wc_user_name', userName);
+                localStorage.setItem('wc_user_phone', userPhone);
                 form.classList.add('hidden');
                 successMessage.classList.remove('hidden');
+                showPredictionSummary({ goalsHome, goalsAway, winner });
                 showConfetti();
                 showFunMessage();
             } else {
-                alert(result.message || 'Failed to submit prediction. Please try again.');
+                showFormError(result.message || 'Failed to submit prediction. Please try again.');
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Prediction';
+                submitBtn.innerHTML = '<span>⚡ Submit Prediction</span>';
             }
         } catch (error) {
             console.error('Submission error:', error);
-            alert('Network error. Please check your connection and try again.');
+            showFormError('Network error. Please check your connection and try again.');
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Submit Prediction';
+            submitBtn.innerHTML = '<span>⚡ Submit Prediction</span>';
         }
     });
 
     // Helpers
+    function prefillUserInfo() {
+        const savedName = localStorage.getItem('wc_user_name');
+        const savedPhone = localStorage.getItem('wc_user_phone');
+        if (savedName) document.getElementById('user-name').value = savedName;
+        if (savedPhone) document.getElementById('user-phone').value = savedPhone;
+    }
+
+    function renderAnnouncements(items) {
+        const panel = document.getElementById('announcements-list');
+        if (!panel) return;
+
+        const typeColors = {
+            announce: '#60a5fa',
+            fun:      '#f59e0b',
+            tip:      '#34d399',
+            hot:      '#f87171',
+        };
+
+        const buildItems = (list) => list.map((item) => {
+            const color = typeColors[item.type] || typeColors.announce;
+            return `<span class="ann-item" style="--ann-color:${color}">` +
+                `<span class="ann-body">` +
+                `<span class="ann-title">${escapeHtml(item.title)}</span>` +
+                `<span class="ann-text">${escapeHtml(item.text)}</span>` +
+                `</span>` +
+                `</span>` +
+                `<span class="ann-sep">◆</span>`;
+        }).join('');
+
+        // Duplicate for seamless loop
+        panel.innerHTML = buildItems(items) + buildItems(items);
+    }
+
+    // ── Live news from public RSS (BBC Sport football) via CORS proxy ──────────
+    async function fetchLiveNews() {
+        const WC_RE = /world\s*cup|fifa|wc\s*2026|worldcup|group\s+[a-h]\b|knockout|quarter.final|semi.final/i;
+        const feeds = [
+            'https://feeds.bbci.co.uk/sport/football/rss.xml',
+            'https://www.espn.com/espn/rss/soccer/news'
+        ];
+        for (const rssUrl of feeds) {
+            try {
+                const ctrl = new AbortController();
+                const tid  = setTimeout(() => ctrl.abort(), 7000);
+                const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(rssUrl);
+                const res  = await fetch(proxyUrl, { signal: ctrl.signal });
+                clearTimeout(tid);
+                if (!res.ok) continue;
+                const json = await res.json();
+                const xml  = new DOMParser().parseFromString(json.contents || '', 'text/xml');
+                const allItems = Array.from(xml.querySelectorAll('item'));
+                const matched  = allItems.filter(el => {
+                    const t = el.querySelector('title')?.textContent       || '';
+                    const d = el.querySelector('description')?.textContent || '';
+                    return WC_RE.test(t) || WC_RE.test(d);
+                });
+                // If fewer than 2 WC-specific hits, use any top football headlines
+                const pool = matched.length >= 2 ? matched : allItems;
+                const items = pool.slice(0, 8).map(el => ({
+                    type:  'hot',
+                    title: '📰 Live',
+                    text:  (el.querySelector('title')?.textContent || '').replace(/<[^>]*>/g, '').trim()
+                })).filter(it => it.text.length > 0);
+                if (items.length) return items;
+            } catch (_) { /* try next feed */ }
+        }
+        return null;
+    }
+
+    // Pinned item always shown first regardless of source
+    const PINNED_ANNOUNCEMENT = {
+        type: 'announce',
+        title: '📢 Advertise Here!',
+        text: 'Want your brand on this ticker? For sponsorship & ads, contact Siva or Safvan! 🤝'
+    };
+
+    // Fetch announcements from backend; fall back to live news, then CONFIG
+    async function loadAndRenderAnnouncements() {
+        try {
+            const res = await fetch(`${CONFIG.APPS_SCRIPT_URL}?action=getAnnouncements`);
+            const data = await res.json();
+            if (data.success && data.announcements && data.announcements.length) {
+                renderAnnouncements([PINNED_ANNOUNCEMENT, ...data.announcements]);
+                return;
+            }
+        } catch (e) {
+            // network error or backend not reachable — fall through
+        }
+
+        // No backend announcements → try live public news
+        const liveItems = await fetchLiveNews();
+        if (liveItems && liveItems.length) {
+            renderAnnouncements([PINNED_ANNOUNCEMENT, ...liveItems]);
+            return;
+        }
+
+        // Final fallback: static config items
+        if (CONFIG.ANNOUNCEMENTS && CONFIG.ANNOUNCEMENTS.length) {
+            renderAnnouncements(CONFIG.ANNOUNCEMENTS);
+        }
+    }
+
+    loadAndRenderAnnouncements();
+
+    function showPredictionSummary({ goalsHome, goalsAway, winner }) {
+        const summaryEl = document.getElementById('prediction-summary');
+        if (!summaryEl || !matchData) return;
+        const winnerLabel = winner === 'draw' ? 'Draw 🤝'
+            : winner === matchData.homeTeam ? matchData.homeTeam
+            : matchData.awayTeam;
+        summaryEl.innerHTML = `
+            <div class="summary-score">
+                ${escapeHtml(matchData.homeTeam)}
+                <span>${goalsHome} – ${goalsAway}</span>
+                ${escapeHtml(matchData.awayTeam)}
+            </div>
+            <div class="summary-winner">🏆 Your pick: <strong>${escapeHtml(winnerLabel)}</strong></div>
+        `;
+        summaryEl.classList.remove('hidden');
+    }
+
     function hideLoading() {
         loadingEl.classList.add('hidden');
     }
