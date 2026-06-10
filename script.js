@@ -614,3 +614,79 @@
         animate();
     }
 })();
+
+// ============================================
+// SIDEBAR WIDGETS — Leaderboard + Upcoming
+// ============================================
+(async function initWidgets() {
+    const tournamentId = 'worldcup-2026';
+    const baseUrl = CONFIG.APPS_SCRIPT_URL;
+
+    // Fetch leaderboard only (upcoming matches come from local CONFIG)
+    const [lbRes] = await Promise.allSettled([
+        fetch(`${baseUrl}?action=getLeaderboard&tournamentId=${encodeURIComponent(tournamentId)}`)
+    ]);
+
+    // ── Leaderboard widget ──
+    const lbEl = document.getElementById('sidebar-lb-body');
+    if (lbEl) {
+        try {
+            const lbData = await lbRes.value.json();
+            if (lbData.success && lbData.leaderboard.length > 0) {
+                lbEl.innerHTML = lbData.leaderboard.slice(0, 10).map((entry, i) => {
+                    const rank = i + 1;
+                    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+                    return `<div class="widget-lb-row">
+                        <span class="widget-lb-rank">${medal}</span>
+                        <span class="widget-lb-name">${entry.name}</span>
+                        <span class="widget-lb-pts">${entry.points}pt</span>
+                    </div>`;
+                }).join('');
+            } else {
+                lbEl.innerHTML = '<p class="widget-loading">No data yet.</p>';
+            }
+        } catch {
+            lbEl.innerHTML = '<p class="widget-loading">—</p>';
+        }
+    }
+
+    // ── Upcoming matches widget — read from local CONFIG, no API call needed ──
+    const upEl = document.getElementById('sidebar-upcoming-body');
+    if (upEl) {
+        try {
+            const today = new Date().toISOString().slice(0, 10);
+            const upcoming = (CONFIG.WORLDCUP_2026_MATCHES || [])
+                .filter(m => m.date >= today)
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .slice(0, 1);
+
+            if (upcoming.length === 0) {
+                upEl.innerHTML = '<p class="widget-loading">No upcoming matches.</p>';
+            } else {
+                upEl.innerHTML = upcoming.map(m => {
+                    const homeCode = (CONFIG.COUNTRY_CODES[m.homeTeam] || 'un');
+                    const awayCode = (CONFIG.COUNTRY_CODES[m.awayTeam] || 'un');
+                    const flagUrl = code => `https://flagcdn.com/w40/${code}.png`;
+                    const dateStr = new Date(m.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+                    return `<div class="widget-match-item">
+                        ${m.group ? `<div class="widget-match-group">Group ${m.group}</div>` : ''}
+                        <div class="widget-match-teams">
+                            <div class="widget-match-team">
+                                <img class="widget-match-flag" src="${flagUrl(homeCode)}" alt="${m.homeTeam}" onerror="this.style.display='none'">
+                                <span>${m.homeTeam}</span>
+                            </div>
+                            <span class="widget-match-vs">VS</span>
+                            <div class="widget-match-team">
+                                <img class="widget-match-flag" src="${flagUrl(awayCode)}" alt="${m.awayTeam}" onerror="this.style.display='none'">
+                                <span>${m.awayTeam}</span>
+                            </div>
+                        </div>
+                        <div class="widget-match-meta">📅 ${dateStr}${m.venue ? `<br>📍 ${m.venue.split(',')[0]}` : ''}${m.time ? `<br>🕐 ${m.time}` : ''}</div>
+                    </div>`;
+                }).join('');
+            }
+        } catch {
+            upEl.innerHTML = '<p class="widget-loading">—</p>';
+        }
+    }
+})();

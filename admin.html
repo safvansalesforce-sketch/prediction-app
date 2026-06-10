@@ -175,9 +175,72 @@
         .tab-btn.active { background: linear-gradient(135deg, #f7971e, #ffd200); color: #1a1a2e; }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
+
+        /* ── Auth Overlay ── */
+        #auth-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 20, 0.97);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        }
+        #auth-overlay .card { max-width: 360px; width: 90%; text-align: center; }
+        #auth-overlay h2 { margin-bottom: 20px; }
+        #auth-error { color: #ff6b6b; margin-top: 10px; font-size: 0.88rem; display: none; }
+
+        /* ── Custom Modal ── */
+        #custom-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        #custom-modal {
+            background: #1a1a2e;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 16px;
+            padding: 28px 32px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        #custom-modal-icon { font-size: 2rem; margin-bottom: 12px; }
+        #custom-modal-msg { font-size: 1rem; line-height: 1.5; margin-bottom: 22px; color: #e0e0e0; }
+        #custom-modal-btns { display: flex; justify-content: center; gap: 12px; }
+        #custom-modal-btns button { min-width: 90px; }
     </style>
 </head>
 <body>
+
+    <!-- Auth Overlay -->
+    <div id="auth-overlay">
+        <div class="card">
+            <h2>🔐 Admin Access</h2>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="auth-password" placeholder="Enter admin password"
+                    onkeydown="if(event.key==='Enter') verifyPassword()" autofocus>
+            </div>
+            <button class="btn btn-primary" style="width:100%; margin-top:10px;" onclick="verifyPassword()">Unlock</button>
+            <div id="auth-error">Incorrect password. Please try again.</div>
+        </div>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="custom-modal-backdrop" style="display:none;">
+        <div id="custom-modal">
+            <div id="custom-modal-icon"></div>
+            <div id="custom-modal-msg"></div>
+            <div id="custom-modal-btns"></div>
+        </div>
+    </div>
+
     <div class="container">
         <h1>⚙️ Admin Panel</h1>
 
@@ -274,7 +337,7 @@
                         <input type="text" id="match-id" placeholder="Will be auto-generated">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Create Match & Generate Link</button>
+                <button type="submit" id="create-match-btn" class="btn btn-primary">⚡ Create Match & Generate Link</button>
             </form>
 
             <div id="status-msg"></div>
@@ -308,20 +371,27 @@
                         <option value="draw">Draw</option>
                     </select>
                 </div>
-                <button class="btn btn-success" onclick="submitResult()">Save Result</button>
+                <button class="btn btn-success" id="save-result-btn" onclick="submitResult()">💾 Save Result</button>
             </div>
-            <div id="result-status" style="margin-top:10px;"></div>
+            <div id="result-status" style="margin-top:15px;"></div>
         </div>
         </div><!-- /tab-results -->
 
         <!-- Existing Matches -->
         <div class="tab-panel" id="tab-matches">
         <div class="card">
-            <h2>Existing Matches</h2>
-            <button class="btn btn-primary" onclick="loadMatches()" style="margin-bottom:15px;">Refresh Matches</button>
-            <div id="matches-list" class="match-list">
-                <p style="color:#aaa;">Click "Refresh Matches" to load</p>
+            <h2>📋 Matches</h2>
+            <div style="display:flex; gap:6px; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
+                <button id="sub-tab-active" onclick="switchMatchTab('active')"
+                    style="padding:6px 18px; border:none; border-radius:8px; cursor:pointer; font-family:'Poppins',sans-serif; font-size:0.85rem; font-weight:600; background:linear-gradient(135deg,#f7971e,#ffd200); color:#1a1a2e;">
+                    ⚡ Active
+                </button>
+                <button id="sub-tab-completed" onclick="switchMatchTab('completed')"
+                    style="padding:6px 18px; border:none; border-radius:8px; cursor:pointer; font-family:'Poppins',sans-serif; font-size:0.85rem; font-weight:600; background:rgba(255,255,255,0.08); color:#aaa;">
+                    ✅ Completed
+                </button>
             </div>
+            <div id="matches-list" class="match-list"></div>
         </div>
         </div><!-- /tab-matches -->
 
@@ -329,7 +399,6 @@
         <div class="tab-panel" id="tab-leaderboard">
         <div class="card">
             <h2>🏆 Leaderboard</h2>
-            <button class="btn btn-primary" onclick="loadLeaderboard()" style="margin-bottom:15px;">Refresh Leaderboard</button>
             <table id="admin-leaderboard" style="width:100%; border-collapse:collapse; display:none;">
                 <thead>
                     <tr style="border-bottom:1px solid rgba(255,255,255,0.2);">
@@ -390,7 +459,6 @@
             </div>
             <div style="display:flex; gap:10px; margin-top:5px;">
                 <button class="btn btn-primary" onclick="addAnnouncement()">➕ Add</button>
-                <button class="btn btn-success" onclick="loadAnnouncements()">🔄 Refresh</button>
             </div>
             <div id="ann-status" style="margin-top:10px;"></div>
             <div id="ann-list" style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
@@ -456,11 +524,126 @@
 
     <script src="config.js"></script>
     <script>
+        // ── Auth ──────────────────────────────────────────────────
+        (function () {
+            if (sessionStorage.getItem('adminAuth') === 'true') {
+                document.getElementById('auth-overlay').style.display = 'none';
+            }
+        })();
+
+        function verifyPassword() {
+            const input = document.getElementById('auth-password').value;
+            if (input === CONFIG.ADMIN_PASSWORD) {
+                sessionStorage.setItem('adminAuth', 'true');
+                document.getElementById('auth-overlay').style.display = 'none';
+                prefetchAll();
+            } else {
+                document.getElementById('auth-error').style.display = 'block';
+                document.getElementById('auth-password').value = '';
+                document.getElementById('auth-password').focus();
+            }
+        }
+
+        // ── Data cache (TTL = 60s per key) ─────────────────────────
+        const _cache = {};
+        const CACHE_TTL = 60000; // ms
+
+        function cacheSet(key, data) {
+            _cache[key] = { data, ts: Date.now() };
+        }
+        function cacheGet(key) {
+            const entry = _cache[key];
+            if (!entry) return null;
+            if (Date.now() - entry.ts > CACHE_TTL) { delete _cache[key]; return null; }
+            return entry.data;
+        }
+        function cacheInvalidate(key) { delete _cache[key]; }
+
+        // Prefetch all tab data in parallel right after login
+        async function prefetchAll() {
+            const tid = getSelectedTournament();
+            await Promise.allSettled([
+                fetchMatchesData(tid),
+                fetchLeaderboardData(tid),
+                fetchAnnouncementsData(),
+                fetchPredictionsData(tid)
+            ]);
+        }
+
+        // ── Admin fetch helpers (auto-inject token) ───────────────
+        async function adminPost(body) {
+            // Apps Script web apps redirect POST to a googleusercontent.com URL.
+            // We must follow the redirect and send body as text/plain so Apps Script
+            // receives it via e.postData.contents (multipart/form-data breaks parsing).
+            return fetch(CONFIG.APPS_SCRIPT_URL, {
+                method: 'POST',
+                redirect: 'follow',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ ...body, adminToken: CONFIG.ADMIN_TOKEN })
+            });
+        }
+
+        async function adminGet(url) {
+            const sep = url.includes('?') ? '&' : '?';
+            return fetch(`${url}${sep}adminToken=${encodeURIComponent(CONFIG.ADMIN_TOKEN)}`);
+        }
+
+        // ── Custom Modal helpers ───────────────────────────────────────
+        function showModal(icon, msg, buttons) {
+            document.getElementById('custom-modal-icon').textContent = icon;
+            document.getElementById('custom-modal-msg').innerHTML = msg;
+            const btnsEl = document.getElementById('custom-modal-btns');
+            btnsEl.innerHTML = '';
+            buttons.forEach(b => {
+                const btn = document.createElement('button');
+                btn.className = 'btn ' + (b.cls || 'btn-primary');
+                btn.textContent = b.label;
+                btn.onclick = () => {
+                    document.getElementById('custom-modal-backdrop').style.display = 'none';
+                    if (b.action) b.action();
+                };
+                btnsEl.appendChild(btn);
+            });
+            document.getElementById('custom-modal-backdrop').style.display = 'flex';
+        }
+
+        function modalAlert(icon, msg) {
+            return new Promise(resolve => {
+                showModal(icon, msg, [{ label: 'OK', cls: 'btn-primary', action: resolve }]);
+            });
+        }
+
+        function modalConfirm(icon, msg) {
+            return new Promise(resolve => {
+                showModal(icon, msg, [
+                    { label: 'Cancel', cls: 'btn-primary', action: () => resolve(false) },
+                    { label: 'Yes, clear', cls: 'btn-danger', action: () => resolve(true) }
+                ]);
+            });
+        }
+
         function switchTab(id) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.querySelector(`.tab-btn[onclick="switchTab('${id}')"]`).classList.add('active');
+
+            // Clear all status messages and output boxes when switching tabs
+            document.querySelectorAll('#status-msg, #result-status, #reset-status, #ann-status').forEach(el => {
+                el.style.display = 'none';
+                el.className = '';
+                el.innerHTML = '';
+            });
+            document.querySelectorAll('#link-output, #matchid-output').forEach(el => {
+                el.style.display = 'none';
+                el.innerHTML = '';
+            });
+
+            // Auto-load data for relevant tabs (uses cache when fresh)
+            if (id === 'tab-matches') loadMatches();
+            if (id === 'tab-leaderboard') loadLeaderboard();
+            if (id === 'tab-announcements') loadAnnouncements();
+            if (id === 'tab-predictions') loadPredictions();
         }
 
         async function resetData(target) {
@@ -471,18 +654,14 @@
                 announcements: 'all Announcements',
                 all: 'EVERYTHING (Predictions, Leaderboard, Matches, Announcements)'
             };
-            const confirmed = confirm(`⚠️ Are you sure you want to clear ${labels[target]}?\n\nThis CANNOT be undone.`);
+            const confirmed = await modalConfirm('⚠️', `Are you sure you want to clear <strong>${labels[target]}</strong>?<br><br>This <strong>cannot</strong> be undone.`);
             if (!confirmed) return;
 
             const statusEl = document.getElementById('reset-status');
             statusEl.innerHTML = '<span style="color:#ffd200;">⏳ Clearing...</span>';
 
             try {
-                const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ action: 'resetData', target })
-                });
+                const res = await adminPost({ action: 'resetData', target });
                 const data = await res.json();
                 if (data.success) {
                     statusEl.innerHTML = `<span style="color:#2ed573;">✅ ${data.message}</span>`;
@@ -514,15 +693,11 @@
 
             try {
                 for (const t of CONFIG.TOURNAMENTS) {
-                    const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
-                        method: 'POST',
-                        redirect: 'follow',
-                        body: JSON.stringify({
-                            action: 'createTournament',
-                            tournamentId: t.id,
-                            name: t.name,
-                            description: t.description
-                        })
+                    const response = await adminPost({
+                        action: 'createTournament',
+                        tournamentId: t.id,
+                        name: t.name,
+                        description: t.description
                     });
                     await response.json();
                 }
@@ -560,11 +735,7 @@
             };
 
             try {
-                const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    redirect: 'follow',
-                    body: JSON.stringify(payload)
-                });
+                const response = await adminPost(payload);
                 const result = await response.json();
 
                 if (result.success) {
@@ -631,23 +802,33 @@
                 matches = matches.filter(m => m.date === dateFilter);
             }
 
-            // Group matches by group letter
+            // Sort by date, then by time
+            matches = [...matches].sort((a, b) => {
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                return (a.time || '').localeCompare(b.time || '');
+            });
+
+            // Group by date
             const grouped = {};
             matches.forEach(m => {
-                if (!grouped[m.group]) grouped[m.group] = [];
-                grouped[m.group].push(m);
+                if (!grouped[m.date]) grouped[m.date] = [];
+                grouped[m.date].push(m);
             });
 
             let html = '';
-            Object.keys(grouped).sort().forEach(group => {
-                html += `<h3 style="color:#ffd200; margin:12px 0 6px; font-size:0.9rem;">Group ${group}</h3>`;
-                grouped[group].forEach(m => {
+            let matchNumber = 0;
+            Object.keys(grouped).sort().forEach(date => {
+                const formatted = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                html += `<h3 style="color:#ffd200; margin:12px 0 6px; font-size:0.9rem;">📅 ${formatted}</h3>`;
+                grouped[date].forEach(m => {
+                    matchNumber++;
                     html += `
                         <div class="wc-match-item" onclick='fillMatchForm(${JSON.stringify(m)})'>
                             <div>
-                                <span class="wc-match-teams">${m.homeTeam} vs ${m.awayTeam}</span>
+                                <span style="color:#aaa; font-size:0.75rem; font-weight:600;">Match ${matchNumber}</span>
                                 <span class="wc-match-group">[Group ${m.group}]</span>
-                                <br><span class="wc-match-meta">${m.date} | ${m.venue}</span>
+                                <br><span class="wc-match-teams">${m.homeTeam} vs ${m.awayTeam}</span>
+                                <br><span class="wc-match-meta">${m.time ? m.time + ' | ' : ''}${m.venue}</span>
                             </div>
                             <span style="color:#2ed573; font-size:0.75rem;">▶ Click to fill</span>
                         </div>
@@ -658,8 +839,24 @@
             listEl.innerHTML = html;
         }
 
+        // Convert "9:30 PM IST" → "21:30" for <input type="time">
+        function parseTimeToHHMM(timeStr) {
+            if (!timeStr) return '';
+            const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!match) return '';
+            let hours = parseInt(match[1]);
+            const minutes = match[2];
+            const period = match[3].toUpperCase();
+            if (period === 'AM' && hours === 12) hours = 0;
+            if (period === 'PM' && hours !== 12) hours += 12;
+            return `${String(hours).padStart(2, '0')}:${minutes}`;
+        }
+
         // Fill the Create Match form when a WC match is clicked
         function fillMatchForm(match) {
+            // Switch to Create Match tab
+            switchTab('tab-create');
+
             // Set tournament to worldcup-2026
             tournamentSelect.value = 'worldcup-2026';
 
@@ -667,7 +864,7 @@
             homeSelect.value = match.homeTeam;
             awaySelect.value = match.awayTeam;
             document.getElementById('match-date').value = match.date;
-            document.getElementById('match-time').value = match.time || '';
+            document.getElementById('match-time').value = parseTimeToHHMM(match.time);
             document.getElementById('match-venue').value = match.venue || '';
             document.getElementById('match-group').value = match.group || '';
 
@@ -732,36 +929,74 @@
                 return;
             }
 
-            try {
-                const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    redirect: 'follow',
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
+            const btn = document.getElementById('create-match-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Generating...';
 
+            // Hide previous outputs
+            document.getElementById('link-output').style.display = 'none';
+            document.getElementById('matchid-output').style.display = 'none';
+
+            try {
+                const response = await adminPost(payload);
+
+                const text = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (parseErr) {
+                    // Apps Script sometimes drops the response body after redirect.
+                    // If status is 200 and body is empty, the action most likely succeeded.
+                    if (response.status === 200 && !text.trim()) {
+                        result = { success: true };
+                    } else {
+                        throw new Error(`Apps Script returned non-JSON (Status ${response.status}): ${text.substring(0, 300) || '(empty)'}`);
+                    }
+                }
+
+                const linkOutput = document.getElementById('link-output');
                 if (result.success) {
                     const baseUrl = window.location.href.replace('admin.html', 'index.html');
                     const link = `${baseUrl}?match=${encodeURIComponent(payload.matchId)}`;
-                    const linkOutput = document.getElementById('link-output');
+
                     linkOutput.style.display = 'block';
+                    linkOutput.style.background = 'rgba(46,213,115,0.12)';
+                    linkOutput.style.borderColor = 'rgba(46,213,115,0.4)';
                     linkOutput.innerHTML = `
-                        <strong>Share this link:</strong><br>
-                        <a href="${link}" target="_blank">${link}</a>
-                        <button class="copy-btn" onclick="copyLink('${link}')">📋 Copy</button>
+                        <div style="color:#2ed573; font-weight:700; margin-bottom:8px;">✅ Match created! Share this link:</div>
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <a href="${link}" target="_blank" style="flex:1; word-break:break-all;">${link}</a>
+                            <button class="copy-btn" onclick="copyToast('${link}', this)">📋 Copy Link</button>
+                        </div>
+                        <div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1); font-size:0.85rem;">
+                            <span style="color:#aaa;">Match ID: </span>
+                            <code style="color:#ffd200;">${payload.matchId}</code>
+                            <button class="copy-btn" onclick="copyToast('${payload.matchId}', this)" style="margin-left:10px;">📋 Copy ID</button>
+                        </div>
                     `;
-                    const matchIdOutput = document.getElementById('matchid-output');
-                    matchIdOutput.style.display = 'block';
-                    matchIdOutput.innerHTML = `
-                        <strong>Match ID:</strong> <code style="color:#ffd200;">${payload.matchId}</code>
-                        <button class="copy-btn" onclick="copyLink('${payload.matchId}')" style="margin-left:10px;">📋 Copy ID</button>
-                    `;
-                    showStatus('Match created successfully!', 'success');
+                    linkOutput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
-                    showStatus(result.message || 'Failed to create match', 'error');
+                    linkOutput.style.display = 'block';
+                    linkOutput.style.background = 'rgba(255,107,107,0.1)';
+                    linkOutput.style.borderColor = 'rgba(255,107,107,0.3)';
+                    linkOutput.innerHTML = `<div style="color:#ff6b6b; font-weight:600;">❌ ${result.message || 'Failed to create match'}</div>
+                        <div style="color:#aaa; font-size:0.82rem; margin-top:4px;">If the match already exists, try changing the Match ID field and resubmitting.</div>`;
+                    linkOutput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             } catch (err) {
-                showStatus('Network error: ' + err.message, 'error');
+                const linkOutput = document.getElementById('link-output');
+                linkOutput.style.display = 'block';
+                linkOutput.style.background = 'rgba(255,107,107,0.1)';
+                linkOutput.style.borderColor = 'rgba(255,107,107,0.3)';
+                linkOutput.innerHTML = `
+                    <div style="color:#ff6b6b; font-weight:600;">❌ Request failed</div>
+                    <div style="color:#aaa; font-size:0.82rem; margin-top:6px;">${err.message}</div>
+                    <div style="color:#888; font-size:0.78rem; margin-top:4px;">Check that your Apps Script is deployed and the URL in config.js is correct.</div>
+                `;
+                linkOutput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⚡ Create Match & Generate Link';
             }
         });
 
@@ -836,56 +1071,140 @@
                 actualWinner: document.getElementById('result-winner').value
             };
 
+            const statusEl = document.getElementById('result-status');
+
             if (!payload.matchId || isNaN(payload.actualGoalsHome) || isNaN(payload.actualGoalsAway)) {
-                document.getElementById('result-status').innerHTML = '<span style="color:#ff6b6b;">Please fill all fields</span>';
+                statusEl.style.display = 'block';
+                statusEl.style.background = 'rgba(255,107,107,0.1)';
+                statusEl.style.border = '1px solid rgba(255,107,107,0.3)';
+                statusEl.style.borderRadius = '10px';
+                statusEl.style.padding = '12px 16px';
+                statusEl.innerHTML = '<span style="color:#ff6b6b; font-weight:600;">❌ Please fill in Match ID and both goal scores.</span>';
                 return;
             }
 
+            const btn = document.getElementById('save-result-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Saving...';
+            statusEl.style.display = 'none';
+
             try {
-                const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    redirect: 'follow',
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                document.getElementById('result-status').innerHTML = result.success
-                    ? '<span style="color:#2ed573;">Result saved & leaderboard updated!</span>'
-                    : `<span style="color:#ff6b6b;">${result.message || 'Error'}</span>`;
+                const response = await adminPost(payload);
+                const text = await response.text();
+                let result;
+                try { result = JSON.parse(text); }
+                catch (_) { result = { success: response.status === 200 && !text.trim() }; }
+
+                if (result.success) {
+                    statusEl.style.display = 'block';
+                    statusEl.style.background = 'rgba(46,213,115,0.12)';
+                    statusEl.style.border = '1px solid rgba(46,213,115,0.4)';
+                    statusEl.style.borderRadius = '10px';
+                    statusEl.style.padding = '12px 16px';
+                    statusEl.innerHTML = `
+                        <div style="color:#2ed573; font-weight:700;">✅ Result saved!</div>
+                        <div style="color:#aaa; font-size:0.85rem; margin-top:4px;">
+                            ${payload.matchId} &nbsp;|&nbsp;
+                            ${payload.actualGoalsHome} – ${payload.actualGoalsAway} &nbsp;|&nbsp;
+                            Winner: <strong style="color:#ffd200;">${payload.actualWinner}</strong>
+                        </div>
+                        <div style="color:#aaa; font-size:0.82rem; margin-top:4px;">Leaderboard has been updated.</div>
+                    `;
+                    // Clear form
+                    document.getElementById('result-match-id').value = '';
+                    document.getElementById('result-home').value = '';
+                    document.getElementById('result-away').value = '';
+                } else {
+                    statusEl.style.display = 'block';
+                    statusEl.style.background = 'rgba(255,107,107,0.1)';
+                    statusEl.style.border = '1px solid rgba(255,107,107,0.3)';
+                    statusEl.style.borderRadius = '10px';
+                    statusEl.style.padding = '12px 16px';
+                    statusEl.innerHTML = `<span style="color:#ff6b6b; font-weight:600;">❌ ${result.message || 'Failed to save result'}</span>`;
+                }
             } catch (err) {
-                document.getElementById('result-status').innerHTML = `<span style="color:#ff6b6b;">Error: ${err.message}</span>`;
+                statusEl.style.display = 'block';
+                statusEl.style.background = 'rgba(255,107,107,0.1)';
+                statusEl.style.border = '1px solid rgba(255,107,107,0.3)';
+                statusEl.style.borderRadius = '10px';
+                statusEl.style.padding = '12px 16px';
+                statusEl.innerHTML = `<span style="color:#ff6b6b; font-weight:600;">❌ Network error: ${err.message}</span>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💾 Save Result';
             }
         }
 
         // Load matches (filtered by tournament)
+        let _allMatches = [];
+        let _matchSubTab = 'active';
+
+        function switchMatchTab(which) {
+            _matchSubTab = which;
+            const activeBtn    = document.getElementById('sub-tab-active');
+            const completedBtn = document.getElementById('sub-tab-completed');
+            const on  = 'background:linear-gradient(135deg,#f7971e,#ffd200); color:#1a1a2e;';
+            const off = 'background:rgba(255,255,255,0.08); color:#aaa;';
+            activeBtn.style.cssText    = `padding:6px 18px; border:none; border-radius:8px; cursor:pointer; font-family:'Poppins',sans-serif; font-size:0.85rem; font-weight:600; ${which==='active'?on:off}`;
+            completedBtn.style.cssText = `padding:6px 18px; border:none; border-radius:8px; cursor:pointer; font-family:'Poppins',sans-serif; font-size:0.85rem; font-weight:600; ${which==='completed'?on:off}`;
+            renderMatchList();
+        }
+
+        function renderMatchList() {
+            const listEl  = document.getElementById('matches-list');
+            const baseUrl = window.location.href.replace('admin.html', 'index.html');
+            const filtered = _allMatches.filter(m =>
+                _matchSubTab === 'completed' ? m.status === 'completed' : m.status !== 'completed'
+            );
+            if (!filtered.length) {
+                listEl.innerHTML = `<p style="color:#aaa;">No ${_matchSubTab} matches found.</p>`;
+                return;
+            }
+            listEl.innerHTML = filtered.map(m => {
+                const link = `${baseUrl}?match=${encodeURIComponent(m.matchId)}`;
+                const scoreTag = m.status === 'completed'
+                    ? `<span style="color:#2ed573; margin-left:8px; font-size:0.82rem;">✅ ${m.actualGoalsHome ?? '?'} – ${m.actualGoalsAway ?? '?'} · ${m.actualWinner ?? ''}</span>`
+                    : '';
+                return `
+                    <div class="match-item">
+                        <div class="match-info">
+                            <strong>${m.homeTeam} vs ${m.awayTeam}</strong>
+                            ${m.group ? `<span style="color:#ffd200; margin-left:8px;">[Group ${m.group}]</span>` : ''}
+                            ${scoreTag}
+                            <br><small style="color:#aaa;">${m.date} | ${m.venue || ''} | ID: ${m.matchId}</small>
+                        </div>
+                        <div class="match-actions">
+                            <button class="copy-btn" onclick="copyToast('${m.matchId}', this)">📋 Copy ID</button>
+                            ${m.status !== 'completed' ? `<button class="copy-btn" onclick="copyToast('${link}', this)">🔗 Copy Link</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function fetchMatchesData(tournamentId) {
+            const key = `matches_${tournamentId}`;
+            const cached = cacheGet(key);
+            if (cached) return cached;
+            const url = `${CONFIG.APPS_SCRIPT_URL}?action=listMatches&tournamentId=${encodeURIComponent(tournamentId)}`;
+            const response = await adminGet(url);
+            const data = await response.json();
+            if (data.success) cacheSet(key, data);
+            return data;
+        }
+
         async function loadMatches() {
             const listEl = document.getElementById('matches-list');
             const tournamentId = getSelectedTournament();
-            listEl.innerHTML = '<p style="color:#aaa;">Loading...</p>';
-
+            const cached = cacheGet(`matches_${tournamentId}`);
+            if (!cached) listEl.innerHTML = '<p style="color:#aaa;">Loading...</p>';
             try {
-                const url = `${CONFIG.APPS_SCRIPT_URL}?action=listMatches&tournamentId=${encodeURIComponent(tournamentId)}`;
-                const response = await fetch(url);
-                const data = await response.json();
-
+                const data = await fetchMatchesData(tournamentId);
                 if (data.success && data.matches.length > 0) {
-                    const baseUrl = window.location.href.replace('admin.html', 'index.html');
-                    listEl.innerHTML = data.matches.map(m => {
-                        const link = `${baseUrl}?match=${encodeURIComponent(m.matchId)}`;
-                        return `
-                            <div class="match-item">
-                                <div class="match-info">
-                                    <strong>${m.homeTeam} vs ${m.awayTeam}</strong>
-                                    ${m.group ? `<span style="color:#ffd200; margin-left:8px;">[Group ${m.group}]</span>` : ''}
-                                    <br><small style="color:#aaa;">${m.date} | ${m.venue || ''} | ID: ${m.matchId}</small>
-                                </div>
-                                <div class="match-actions">
-                                    <button class="copy-btn" onclick="copyLink('${m.matchId}')">📋 Copy ID</button>
-                                    <button class="copy-btn" onclick="copyLink('${link}')">🔗 Copy Link</button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
+                    _allMatches = data.matches;
+                    renderMatchList();
                 } else {
+                    _allMatches = [];
                     listEl.innerHTML = '<p style="color:#aaa;">No matches found for this tournament.</p>';
                 }
             } catch (err) {
@@ -895,33 +1214,60 @@
 
         function copyLink(text) {
             navigator.clipboard.writeText(text).then(() => {
-                const msg = text.startsWith('http') ? 'Link copied!' : 'Match ID copied!';
-                alert(msg);
+                const msg = text.startsWith('http') ? 'Link copied to clipboard!' : 'Match ID copied to clipboard!';
+                modalAlert('📋', msg);
+            });
+        }
+
+        function copyToast(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const original = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                btn.style.background = '#2ed573';
+                setTimeout(() => {
+                    btn.textContent = original;
+                    btn.style.background = '';
+                }, 2000);
             });
         }
 
         function showStatus(msg, type) {
             const el = document.getElementById('status-msg');
+            el.style.display = 'none'; // reset inline style first
+            el.className = '';
+            // Force reflow so the transition triggers
+            void el.offsetHeight;
             el.textContent = msg;
             el.className = type;
-            setTimeout(() => { el.style.display = 'none'; el.className = ''; }, 4000);
+            clearTimeout(el._hideTimer);
+            el._hideTimer = setTimeout(() => {
+                el.style.display = 'none';
+                el.className = '';
+            }, 5000);
         }
 
         // Load leaderboard
+        async function fetchLeaderboardData(tournamentId) {
+            const key = `leaderboard_${tournamentId}`;
+            const cached = cacheGet(key);
+            if (cached) return cached;
+            const url = `${CONFIG.APPS_SCRIPT_URL}?action=getLeaderboard&tournamentId=${encodeURIComponent(tournamentId)}`;
+            const response = await adminGet(url);
+            const data = await response.json();
+            if (data.success) cacheSet(key, data);
+            return data;
+        }
+
         async function loadLeaderboard() {
             const tournamentId = getSelectedTournament();
             const emptyEl = document.getElementById('leaderboard-empty');
             const tableEl = document.getElementById('admin-leaderboard');
             const tbody = document.getElementById('admin-leaderboard-body');
-
-            emptyEl.textContent = 'Loading...';
-            tableEl.style.display = 'none';
+            const cached = cacheGet(`leaderboard_${tournamentId}`);
+            if (!cached) { emptyEl.textContent = 'Loading...'; tableEl.style.display = 'none'; }
 
             try {
-                const url = `${CONFIG.APPS_SCRIPT_URL}?action=getLeaderboard&tournamentId=${encodeURIComponent(tournamentId)}`;
-                const response = await fetch(url);
-                const data = await response.json();
-
+                const data = await fetchLeaderboardData(tournamentId);
                 if (data.success && data.leaderboard.length > 0) {
                     tbody.innerHTML = data.leaderboard.map((entry, idx) => {
                         const rank = idx + 1;
@@ -946,22 +1292,28 @@
         }
 
         // Load predictions
+        async function fetchPredictionsData(tournamentId, matchId) {
+            const key = `predictions_${tournamentId}_${matchId || ''}`;
+            const cached = cacheGet(key);
+            if (cached) return cached;
+            let url = `${CONFIG.APPS_SCRIPT_URL}?action=getPredictions`;
+            if (matchId) url += `&matchId=${encodeURIComponent(matchId)}`;
+            const response = await adminGet(url);
+            const data = await response.json();
+            if (data.success) cacheSet(key, data);
+            return data;
+        }
+
         async function loadPredictions() {
             const matchId = document.getElementById('predictions-match-id').value.trim();
             const listEl = document.getElementById('predictions-list');
             const countEl = document.getElementById('predictions-count');
-
-            listEl.innerHTML = '<p style="color:#aaa;">Loading...</p>';
-            countEl.textContent = '';
+            const tournamentId = getSelectedTournament();
+            const cached = cacheGet(`predictions_${tournamentId}_${matchId}`);
+            if (!cached) { listEl.innerHTML = '<p style="color:#aaa;">Loading...</p>'; countEl.textContent = ''; }
 
             try {
-                let url = `${CONFIG.APPS_SCRIPT_URL}?action=getPredictions`;
-                if (matchId) {
-                    url += `&matchId=${encodeURIComponent(matchId)}`;
-                }
-                const response = await fetch(url);
-                const data = await response.json();
-
+                const data = await fetchPredictionsData(tournamentId, matchId);
                 if (data.success && data.predictions.length > 0) {
                     countEl.textContent = `Total: ${data.predictions.length} prediction(s)`;
                     listEl.innerHTML = data.predictions.map(p => `
@@ -992,12 +1344,21 @@
         const typeColors = { announce: '#60a5fa', hot: '#f87171', fun: '#f59e0b', tip: '#34d399' };
         const typeLabels = { announce: '📢 Announcement', hot: '🔥 Hot', fun: '😂 Fun', tip: '💡 Tip' };
 
+        async function fetchAnnouncementsData() {
+            const cached = cacheGet('announcements');
+            if (cached) return cached;
+            const res = await adminGet(`${CONFIG.APPS_SCRIPT_URL}?action=getAnnouncements`);
+            const data = await res.json();
+            if (data.success) cacheSet('announcements', data);
+            return data;
+        }
+
         async function loadAnnouncements() {
             const listEl = document.getElementById('ann-list');
-            listEl.innerHTML = '<p style="color:#aaa;">Loading...</p>';
+            const cached = cacheGet('announcements');
+            if (!cached) listEl.innerHTML = '<p style="color:#aaa;">Loading...</p>';
             try {
-                const res = await fetch(`${CONFIG.APPS_SCRIPT_URL}?action=getAnnouncements`);
-                const data = await res.json();
+                const data = await fetchAnnouncementsData();
                 if (!data.success) throw new Error(data.message);
                 if (!data.announcements.length) {
                     listEl.innerHTML = '<p style="color:#aaa;">No announcements yet.</p>';
@@ -1035,15 +1396,13 @@
             }
             statusEl.innerHTML = '<span style="color:#ffd200;">Saving...</span>';
             try {
-                const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
-                    method: 'POST', redirect: 'follow',
-                    body: JSON.stringify({ action: 'createAnnouncement', type, title, text })
-                });
+                const res = await adminPost({ action: 'createAnnouncement', type, title, text });
                 const data = await res.json();
                 if (!data.success) throw new Error(data.message);
                 statusEl.innerHTML = '<span style="color:#2ed573;">✅ Added!</span>';
                 document.getElementById('ann-title').value = '';
                 document.getElementById('ann-text').value = '';
+                cacheInvalidate('announcements');
                 loadAnnouncements();
             } catch (err) {
                 statusEl.innerHTML = `<span style="color:#ff6b6b;">Error: ${err.message}</span>`;
@@ -1051,17 +1410,16 @@
         }
 
         async function deleteAnnouncement(id) {
-            if (!confirm('Delete this announcement?')) return;
+            const confirmed = await modalConfirm('🗑️', 'Delete this announcement?');
+            if (!confirmed) return;
             try {
-                const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
-                    method: 'POST', redirect: 'follow',
-                    body: JSON.stringify({ action: 'deleteAnnouncement', id })
-                });
+                const res = await adminPost({ action: 'deleteAnnouncement', id });
                 const data = await res.json();
                 if (!data.success) throw new Error(data.message);
+                cacheInvalidate('announcements');
                 loadAnnouncements();
             } catch (err) {
-                alert('Error: ' + err.message);
+                modalAlert('❌', 'Error: ' + err.message);
             }
         }
     </script>

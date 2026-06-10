@@ -28,7 +28,19 @@
         </div>
     </div>
 
-    <div class="container">
+    <div class="page-layout">
+        <!-- LEFT: Leaderboard widget -->
+        <aside class="sidebar sidebar-left" id="sidebar-leaderboard">
+            <div class="widget">
+                <div class="widget-title">🏆 Leaderboard</div>
+                <div id="sidebar-lb-body" class="widget-lb-list">
+                    <p class="widget-loading">Loading...</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CENTRE: main content -->
+        <div class="container">
         <!-- Header -->
         <header class="header">
             <img
@@ -140,7 +152,7 @@
                 </button>
 
                 <div class="scoring-info">
-                    <p>🎯 Exact Score = <strong>5 pts</strong> | ✅ Correct Winner = <strong>3 pts</strong></p>
+                    <p>🎯 Exact Score = <strong>5 pts</strong> + ✅ Correct Winner = <strong>3 pts</strong> = <strong>8 pts total</strong></p>
                 </div>
             </form>
 
@@ -184,6 +196,17 @@
         </div>
     </div><!-- end .container -->
 
+        <!-- RIGHT: Upcoming matches widget -->
+        <aside class="sidebar sidebar-right" id="sidebar-upcoming">
+            <div class="widget">
+                <div class="widget-title">📅 Upcoming</div>
+                <div id="sidebar-upcoming-body" class="widget-match-list">
+                    <p class="widget-loading">Loading...</p>
+                </div>
+            </div>
+        </aside>
+
+    </div><!-- end .page-layout -->
     <!-- Confetti canvas -->
     <canvas id="confetti-canvas"></canvas>
 
