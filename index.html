@@ -20,12 +20,24 @@
         <div class="particle">🥅</div>
     </div>
 
+    <!-- Announcements Ticker (top marquee) -->
+    <div class="ticker-bar" id="announcements-panel">
+        <div class="ticker-label">📢 LIVE</div>
+        <div class="ticker-track">
+            <div class="ticker-content" id="announcements-list"></div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <div class="trophy-bounce">🏆</div>
-            <h1>World Cup 2026 Prediction</h1>
-            <p class="tagline">Predict. Compete. Glory awaits!</p>
+            <img
+                src="trophy.svg"
+                alt="FIFA World Cup 2026"
+                class="trophy-bounce"
+            >
+            <h1>World Cup 2026 <span class="title-gold">Prediction</span></h1>
+            <p class="tagline">✦ Predict. Compete. Glory awaits! ✦</p>
             <div id="countdown" class="countdown"></div>
         </header>
 
@@ -35,21 +47,28 @@
             <p>The prediction window for this match has closed (6:00 PM IST).</p>
         </div>
 
+        <!-- Leaderboard Teaser -->
+        <div id="leaderboard-teaser" class="leaderboard-teaser hidden">
+            <span>📊 Others have already predicted —</span>
+            <a href="#leaderboard-section" id="teaser-link">See current standings ↓</a>
+        </div>
+
         <!-- Match Info -->
         <div id="match-section" class="match-section hidden">
             <div class="match-card">
+                <div class="goal-post goal-post-left"></div>
                 <div class="team team-home">
                     <img id="flag-home" class="flag" src="" alt="Home Team Flag">
                     <h2 id="team-home-name">Team A</h2>
                 </div>
                 <div class="vs-container">
                     <div class="vs-ball">⚽</div>
-                    <span class="vs">VS</span>
                 </div>
                 <div class="team team-away">
                     <img id="flag-away" class="flag" src="" alt="Away Team Flag">
                     <h2 id="team-away-name">Team B</h2>
                 </div>
+                <div class="goal-post goal-post-right"></div>
             </div>
 
             <div class="match-details">
@@ -65,17 +84,28 @@
                 <div class="score-section">
                     <div class="score-input">
                         <label id="label-home">Team A Goals</label>
-                        <input type="number" id="goals-home" min="0" max="20" required placeholder="0">
+                        <div class="stepper">
+                            <button type="button" class="stepper-btn stepper-minus" data-target="goals-home">−</button>
+                            <span class="stepper-value" id="goals-home-display">0</span>
+                            <input type="hidden" id="goals-home" value="0">
+                            <button type="button" class="stepper-btn stepper-plus" data-target="goals-home">+</button>
+                        </div>
                     </div>
-                    <div class="score-separator">-</div>
+                    <div class="score-separator">−</div>
                     <div class="score-input">
                         <label id="label-away">Team B Goals</label>
-                        <input type="number" id="goals-away" min="0" max="20" required placeholder="0">
+                        <div class="stepper">
+                            <button type="button" class="stepper-btn stepper-minus" data-target="goals-away">−</button>
+                            <span class="stepper-value" id="goals-away-display">0</span>
+                            <input type="hidden" id="goals-away" value="0">
+                            <button type="button" class="stepper-btn stepper-plus" data-target="goals-away">+</button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="winner-section">
                     <label>Who will win? 🤔</label>
+                    <p class="winner-hint" id="winner-hint">Auto-selected based on your score — you can override below.</p>
                     <div class="winner-options">
                         <label class="radio-card">
                             <input type="radio" name="winner" id="radio-home" required>
@@ -100,10 +130,11 @@
                     <div class="input-group">
                         <label for="user-phone">Phone Number</label>
                         <input type="tel" id="user-phone" required placeholder="Enter phone number" pattern="[0-9]{10}" maxlength="10">
-                        <small>10-digit mobile number</small>
+                        <small>10-digit number · used only to notify you of results</small>
                     </div>
                 </div>
 
+                <div id="form-error" class="form-error hidden"></div>
                 <button type="submit" id="submit-btn" class="submit-btn">
                     <span>⚡ Submit Prediction</span>
                 </button>
@@ -117,7 +148,8 @@
             <div id="success-message" class="success-message hidden">
                 <div class="success-icon">🎉</div>
                 <h3>Prediction Submitted!</h3>
-                <p>Your prediction has been recorded. May the odds be in your favor!</p>
+                <div id="prediction-summary" class="prediction-summary hidden"></div>
+                <p>May the odds be in your favor!</p>
                 <div class="fun-message" id="fun-message"></div>
             </div>
         </div>
@@ -147,12 +179,66 @@
         <!-- Error -->
         <div id="error-message" class="error-message hidden">
             <h2>❌ Match Not Found</h2>
-            <p>Invalid match link or match does not exist.</p>
+            <p>Couldn’t load this match. Check your connection or the link.</p>
+            <button class="btn-retry" onclick="location.reload()">↺ Try again</button>
         </div>
-    </div>
+    </div><!-- end .container -->
 
     <!-- Confetti canvas -->
     <canvas id="confetti-canvas"></canvas>
+
+    <!-- Bottom Sponsorship Ticker -->
+    <div class="sponsor-bar">
+        <div class="sponsor-label">🤝 SPONSORS</div>
+        <div class="sponsor-track">
+            <div class="sponsor-content">
+                <span class="sponsor-item">⚡ <b>QuickGoal™</b> — Bet faster than you think</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🍔 <b>HatTrick Burger</b> — 3 patties or nothing</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">💈 <b>OffsideSalon</b> — Always one step behind the trend</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🚕 <b>RedCardCabs</b> — We get you out of the game fast</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">💊 <b>PenaltyPharmacy</b> — Pain relief in extra time</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🧦 <b>YellowCardSocks</b> — Warned once, worn twice</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🧃 <b>GoalJuice™</b> — Drink it before the final whistle</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🏨 <b>CornerKick Hotel</b> — Awkward location, great views</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">📱 <b>VAR Technologies</b> — We review every bad decision</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🧠 <b>NaseebAI™</b> — Predictions powered by poetry</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item" style="color:#ffd200;">📢 <b>Your Ad Here!</b> — For sponsorship &amp; ads contact <b style="color:#fff;">Siva</b> or <b style="color:#fff;">Safvan</b></span>
+                <span class="sponsor-sep">|</span>
+                <!-- duplicate for seamless loop -->
+                <span class="sponsor-item">⚡ <b>QuickGoal™</b> — Bet faster than you think</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🍔 <b>HatTrick Burger</b> — 3 patties or nothing</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">💈 <b>OffsideSalon</b> — Always one step behind the trend</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🚕 <b>RedCardCabs</b> — We get you out of the game fast</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">💊 <b>PenaltyPharmacy</b> — Pain relief in extra time</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🧦 <b>YellowCardSocks</b> — Warned once, worn twice</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🧃 <b>GoalJuice™</b> — Drink it before the final whistle</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🏨 <b>CornerKick Hotel</b> — Awkward location, great views</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">📱 <b>VAR Technologies</b> — We review every bad decision</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item">🧠 <b>NaseebAI™</b> — Predictions powered by poetry</span>
+                <span class="sponsor-sep">|</span>
+                <span class="sponsor-item" style="color:#ffd200;">📢 <b>Your Ad Here!</b> — For sponsorship &amp; ads contact <b style="color:#fff;">Siva</b> or <b style="color:#fff;">Safvan</b></span>
+            </div>
+        </div>
+    </div>
 
     <script src="config.js"></script>
     <script src="script.js"></script>
