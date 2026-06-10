@@ -226,6 +226,9 @@
         const homeVal = parseInt(document.getElementById('goals-home').value) || 0;
         const awayVal = parseInt(document.getElementById('goals-away').value) || 0;
         const hint = document.getElementById('winner-hint');
+        const drawRadio = document.querySelector('input[name="winner"][value="draw"]');
+        const drawLabel = drawRadio ? drawRadio.closest('label') : null;
+
         let derivedValue;
         if (homeVal > awayVal) {
             derivedValue = document.getElementById('radio-home').value;
@@ -234,6 +237,18 @@
         } else {
             derivedValue = 'draw';
         }
+
+        // Disable/enable Draw option based on whether scores are equal
+        const isUnequal = homeVal !== awayVal;
+        if (drawRadio) {
+            drawRadio.disabled = isUnequal;
+            if (drawLabel) {
+                drawLabel.style.opacity = isUnequal ? '0.35' : '';
+                drawLabel.style.cursor = isUnequal ? 'not-allowed' : '';
+                drawLabel.title = isUnequal ? 'Draw is only possible when scores are equal' : '';
+            }
+        }
+
         const radio = document.querySelector(`input[name="winner"][value="${derivedValue}"]`);
         if (radio) {
             radio.checked = true;
