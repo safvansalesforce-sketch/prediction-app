@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Cup Prediction</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>⚽ World Cup 2026 Prediction</h1>
+            <div id="countdown" class="countdown"></div>
+        </header>
+
+        <!-- Prediction Closed Message -->
+        <div id="closed-message" class="closed-message hidden">
+            <h2>🚫 Predictions Closed</h2>
+            <p>The prediction window for this match has closed (9:00 PM IST).</p>
+        </div>
+
+        <!-- Match Info -->
+        <div id="match-section" class="match-section hidden">
+            <div class="match-card">
+                <div class="team team-home">
+                    <img id="flag-home" class="flag" src="" alt="Home Team Flag">
+                    <h2 id="team-home-name">Team A</h2>
+                </div>
+                <div class="vs">VS</div>
+                <div class="team team-away">
+                    <img id="flag-away" class="flag" src="" alt="Away Team Flag">
+                    <h2 id="team-away-name">Team B</h2>
+                </div>
+            </div>
+
+            <div class="match-details">
+                <p id="match-date"></p>
+                <p id="match-venue"></p>
+            </div>
+
+            <!-- Prediction Form -->
+            <form id="prediction-form" class="prediction-form">
+                <h3>Your Prediction</h3>
+
+                <div class="score-section">
+                    <div class="score-input">
+                        <label id="label-home">Team A Goals</label>
+                        <input type="number" id="goals-home" min="0" max="20" required placeholder="0">
+                    </div>
+                    <div class="score-separator">-</div>
+                    <div class="score-input">
+                        <label id="label-away">Team B Goals</label>
+                        <input type="number" id="goals-away" min="0" max="20" required placeholder="0">
+                    </div>
+                </div>
+
+                <div class="winner-section">
+                    <label>Who will win?</label>
+                    <div class="winner-options">
+                        <label class="radio-card">
+                            <input type="radio" name="winner" id="radio-home" required>
+                            <span id="winner-home">Team A</span>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="winner" value="draw">
+                            <span>Draw</span>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="winner" id="radio-away">
+                            <span id="winner-away">Team B</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="user-info">
+                    <div class="input-group">
+                        <label for="user-name">Your Name</label>
+                        <input type="text" id="user-name" required placeholder="Enter your name" maxlength="50">
+                    </div>
+                    <div class="input-group">
+                        <label for="user-phone">Phone Number</label>
+                        <input type="tel" id="user-phone" required placeholder="Enter phone number" pattern="[0-9]{10}" maxlength="10">
+                        <small>10-digit mobile number</small>
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-btn" class="submit-btn">Submit Prediction</button>
+            </form>
+
+            <!-- Success Message -->
+            <div id="success-message" class="success-message hidden">
+                <h3>✅ Prediction Submitted!</h3>
+                <p>Your prediction has been recorded. Good luck!</p>
+            </div>
+        </div>
+
+        <!-- Leaderboard Section -->
+        <div id="leaderboard-section" class="leaderboard-section hidden">
+            <h2>🏆 Leaderboard</h2>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Name</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading match details...</p>
+        </div>
+
+        <!-- Error -->
+        <div id="error-message" class="error-message hidden">
+            <h2>❌ Match Not Found</h2>
+            <p>Invalid match link or match does not exist.</p>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

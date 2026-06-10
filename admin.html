@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - World Cup Prediction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { text-align: center; color: #ffd200; margin-bottom: 30px; }
+        h2 { color: #ffd200; margin: 20px 0 15px; }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #ffd200;
+        }
+        .form-group select option { background: #1a1a2e; color: #fff; }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-primary { background: linear-gradient(135deg, #f7971e, #ffd200); color: #1a1a2e; }
+        .btn-success { background: #2ed573; color: #1a1a2e; }
+        .btn-danger { background: #ff6b6b; color: #fff; }
+
+        .link-output {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(46, 213, 115, 0.1);
+            border: 1px solid rgba(46, 213, 115, 0.3);
+            border-radius: 10px;
+            word-break: break-all;
+        }
+        .link-output a { color: #2ed573; text-decoration: none; }
+        .link-output a:hover { text-decoration: underline; }
+
+        .match-list { margin-top: 20px; }
+        .match-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .match-item .match-info { flex: 1; }
+        .match-item .match-actions { display: flex; gap: 8px; }
+        .match-item .match-actions button {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .copy-btn {
+            background: #ffd200;
+            color: #1a1a2e;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        #status-msg {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+        #status-msg.success { display: block; background: rgba(46,213,115,0.2); color: #2ed573; }
+        #status-msg.error { display: block; background: rgba(255,107,107,0.2); color: #ff6b6b; }
+
+        .results-section { margin-top: 20px; }
+        .results-form { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+        .results-form .form-group { margin-bottom: 0; flex: 1; min-width: 100px; }
+
+        .wc-match-list { margin-top: 15px; max-height: 400px; overflow-y: auto; }
+        .wc-match-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            border: 1px solid rgba(255,255,255,0.08);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .wc-match-item:hover {
+            background: rgba(255,210,0,0.1);
+            border-color: rgba(255,210,0,0.3);
+        }
+        .wc-match-item .wc-match-teams { font-weight: 600; }
+        .wc-match-item .wc-match-meta { font-size: 0.8rem; color: #aaa; }
+        .wc-match-item .wc-match-group { color: #ffd200; font-size: 0.8rem; margin-left: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ Admin Panel</h1>
+
+        <!-- Tournament Selection -->
+        <div class="card">
+            <h2>🏆 Tournament</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Select Tournament</label>
+                    <select id="tournament-select">
+                        <option value="">-- Select Tournament --</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display:flex; align-items:end; gap:10px;">
+                    <button class="btn btn-primary" onclick="setupTournaments()">Setup Tournaments</button>
+                    <button class="btn btn-success" onclick="loadWorldCupMatches()">Load WC 2026 Matches</button>
+                </div>
+            </div>
+            <div class="form-group" id="group-filter-container" style="display:none; margin-top:10px;">
+                <label>Filter by Group</label>
+                <select id="group-filter" onchange="filterWCMatches()">
+                    <option value="all">All Groups</option>
+                    <option value="A">Group A</option>
+                    <option value="B">Group B</option>
+                    <option value="C">Group C</option>
+                    <option value="D">Group D</option>
+                    <option value="E">Group E</option>
+                    <option value="F">Group F</option>
+                    <option value="G">Group G</option>
+                    <option value="H">Group H</option>
+                </select>
+            </div>
+            <div class="form-group" id="date-filter-container" style="display:none; margin-top:10px;">
+                <label>Filter by Date</label>
+                <select id="date-filter" onchange="filterWCMatches()">
+                    <option value="all">All Dates</option>
+                </select>
+            </div>
+            <div id="tournament-status" style="margin-top:10px;"></div>
+            <div id="wc-matches-list" class="wc-match-list"></div>
+        </div>
+
+        <!-- Create Match -->
+        <div class="card">
+            <h2>Create New Match</h2>
+            <form id="create-match-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Home Team</label>
+                        <select id="home-team" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Away Team</label>
+                        <select id="away-team" required></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Match Date</label>
+                        <input type="date" id="match-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Venue (optional)</label>
+                        <input type="text" id="match-venue" placeholder="Stadium, City">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Group (optional)</label>
+                        <input type="text" id="match-group" placeholder="A, B, C...">
+                    </div>
+                    <div class="form-group">
+                        <label>Match ID (auto-generated, editable)</label>
+                        <input type="text" id="match-id" placeholder="Will be auto-generated">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Match & Generate Link</button>
+            </form>
+
+            <div id="status-msg"></div>
+            <div id="link-output" class="link-output" style="display:none;"></div>
+        </div>
+
+        <!-- Enter Results -->
+        <div class="card">
+            <h2>Enter Match Results</h2>
+            <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">Enter actual scores to calculate leaderboard points</p>
+            <div class="results-form">
+                <div class="form-group">
+                    <label>Match ID</label>
+                    <input type="text" id="result-match-id" placeholder="match-id">
+                </div>
+                <div class="form-group">
+                    <label id="result-home-label">Team 1 Goals</label>
+                    <input type="number" id="result-home" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label id="result-away-label">Team 2 Goals</label>
+                    <input type="number" id="result-away" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>Winner</label>
+                    <select id="result-winner">
+                        <option value="draw">Draw</option>
+                    </select>
+                    <small style="color:#aaa;">Options update when Match ID is entered</small>
+                </div>
+                <button class="btn btn-success" onclick="submitResult()">Save Result</button>
+            </div>
+            <div id="result-status" style="margin-top:10px;"></div>
+        </div>
+
+        <!-- Existing Matches -->
+        <div class="card">
+            <h2>Existing Matches</h2>
+            <button class="btn btn-primary" onclick="loadMatches()" style="margin-bottom:15px;">Refresh Matches</button>
+            <div id="matches-list" class="match-list">
+                <p style="color:#aaa;">Click "Refresh Matches" to load</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // Populate tournament select
+        const tournamentSelect = document.getElementById('tournament-select');
+        CONFIG.TOURNAMENTS.forEach(t => {
+            tournamentSelect.add(new Option(t.name, t.id));
+        });
+        // Default to first tournament
+        if (CONFIG.TOURNAMENTS.length > 0) {
+            tournamentSelect.value = CONFIG.TOURNAMENTS[0].id;
+        }
+
+        function getSelectedTournament() {
+            return tournamentSelect.value;
+        }
+
+        // Setup tournaments in backend
+        async function setupTournaments() {
+            const statusEl = document.getElementById('tournament-status');
+            statusEl.innerHTML = '<span style="color:#ffd200;">Setting up tournaments...</span>';
+
+            try {
+                for (const t of CONFIG.TOURNAMENTS) {
+                    const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        redirect: 'follow',
+                        body: JSON.stringify({
+                            action: 'createTournament',
+                            tournamentId: t.id,
+                            name: t.name,
+                            description: t.description
+                        })
+                    });
+                    await response.json();
+                }
+                statusEl.innerHTML = '<span style="color:#2ed573;">Tournaments created successfully!</span>';
+            } catch (err) {
+                statusEl.innerHTML = `<span style="color:#ff6b6b;">Error: ${err.message}</span>`;
+            }
+        }
+
+        // Load all World Cup 2026 matches — display locally for selection
+        function loadWorldCupMatches() {
+            // Show filters
+            document.getElementById('group-filter-container').style.display = 'block';
+            document.getElementById('date-filter-container').style.display = 'block';
+            document.getElementById('group-filter').value = 'all';
+
+            // Populate date filter with unique dates
+            const dates = [...new Set(CONFIG.WORLDCUP_2026_MATCHES.map(m => m.date))].sort();
+            const dateSelect = document.getElementById('date-filter');
+            dateSelect.innerHTML = '<option value="all">All Dates</option>';
+            dates.forEach(d => {
+                const formatted = new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+                dateSelect.add(new Option(`${formatted} (${d})`, d));
+            });
+
+            renderWCMatches();
+            document.getElementById('tournament-status').innerHTML = '<span style="color:#2ed573;">Click a match below to fill the form and create its link.</span>';
+        }
+
+        // Filter and render WC matches
+        function filterWCMatches() {
+            renderWCMatches();
+        }
+
+        function renderWCMatches() {
+            const listEl = document.getElementById('wc-matches-list');
+            const groupFilter = document.getElementById('group-filter').value;
+            const dateFilter = document.getElementById('date-filter').value;
+
+            let matches = CONFIG.WORLDCUP_2026_MATCHES;
+
+            if (groupFilter !== 'all') {
+                matches = matches.filter(m => m.group === groupFilter);
+            }
+            if (dateFilter !== 'all') {
+                matches = matches.filter(m => m.date === dateFilter);
+            }
+
+            // Group matches by group letter
+            const grouped = {};
+            matches.forEach(m => {
+                if (!grouped[m.group]) grouped[m.group] = [];
+                grouped[m.group].push(m);
+            });
+
+            let html = '';
+            Object.keys(grouped).sort().forEach(group => {
+                html += `<h3 style="color:#ffd200; margin:12px 0 6px; font-size:0.9rem;">Group ${group}</h3>`;
+                grouped[group].forEach(m => {
+                    html += `
+                        <div class="wc-match-item" onclick='fillMatchForm(${JSON.stringify(m)})'>
+                            <div>
+                                <span class="wc-match-teams">${m.homeTeam} vs ${m.awayTeam}</span>
+                                <span class="wc-match-group">[Group ${m.group}]</span>
+                                <br><span class="wc-match-meta">${m.date} | ${m.venue}</span>
+                            </div>
+                            <span style="color:#2ed573; font-size:0.75rem;">▶ Click to fill</span>
+                        </div>
+                    `;
+                });
+            });
+
+            listEl.innerHTML = html;
+        }
+
+        // Fill the Create Match form when a WC match is clicked
+        function fillMatchForm(match) {
+            // Set tournament to worldcup-2026
+            tournamentSelect.value = 'worldcup-2026';
+
+            // Set form fields
+            homeSelect.value = match.homeTeam;
+            awaySelect.value = match.awayTeam;
+            document.getElementById('match-date').value = match.date;
+            document.getElementById('match-venue').value = match.venue || '';
+            document.getElementById('match-group').value = match.group || '';
+
+            // Generate match ID
+            const matchId = `${match.homeTeam.toLowerCase().replace(/\s+/g, '-')}-vs-${match.awayTeam.toLowerCase().replace(/\s+/g, '-')}-${match.date}`;
+            document.getElementById('match-id').value = matchId;
+
+            // Scroll to form
+            document.getElementById('create-match-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            showStatus(`Filled: ${match.homeTeam} vs ${match.awayTeam} — Click "Create Match & Generate Link" to create`, 'success');
+        }
+
+        // Populate team selects
+        const teams = Object.keys(CONFIG.COUNTRY_CODES).sort();
+        const homeSelect = document.getElementById('home-team');
+        const awaySelect = document.getElementById('away-team');
+
+        teams.forEach(team => {
+            homeSelect.add(new Option(team, team));
+            awaySelect.add(new Option(team, team));
+        });
+
+        // Auto-generate match ID
+        homeSelect.addEventListener('change', generateMatchId);
+        awaySelect.addEventListener('change', generateMatchId);
+        document.getElementById('match-date').addEventListener('change', generateMatchId);
+
+        function generateMatchId() {
+            const home = homeSelect.value;
+            const away = awaySelect.value;
+            const date = document.getElementById('match-date').value;
+            if (home && away && date) {
+                const id = `${home.toLowerCase().replace(/\s+/g, '-')}-vs-${away.toLowerCase().replace(/\s+/g, '-')}-${date}`;
+                document.getElementById('match-id').value = id;
+            }
+        }
+
+        // Create match form
+        document.getElementById('create-match-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const tournamentId = getSelectedTournament();
+            if (!tournamentId) {
+                showStatus('Please select a tournament first', 'error');
+                return;
+            }
+
+            const payload = {
+                action: 'createMatch',
+                matchId: document.getElementById('match-id').value.trim(),
+                tournamentId: tournamentId,
+                homeTeam: homeSelect.value,
+                awayTeam: awaySelect.value,
+                date: document.getElementById('match-date').value,
+                venue: document.getElementById('match-venue').value.trim(),
+                group: document.getElementById('match-group').value.trim()
+            };
+
+            if (!payload.matchId) {
+                showStatus('Please fill all required fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    const baseUrl = window.location.href.replace('admin.html', 'index.html');
+                    const link = `${baseUrl}?match=${encodeURIComponent(payload.matchId)}`;
+                    const linkOutput = document.getElementById('link-output');
+                    linkOutput.style.display = 'block';
+                    linkOutput.innerHTML = `
+                        <strong>Share this link:</strong><br>
+                        <a href="${link}" target="_blank">${link}</a>
+                        <button class="copy-btn" onclick="copyLink('${link}')">📋 Copy</button>
+                    `;
+                    showStatus('Match created successfully!', 'success');
+                } else {
+                    showStatus(result.message || 'Failed to create match', 'error');
+                }
+            } catch (err) {
+                showStatus('Network error: ' + err.message, 'error');
+            }
+        });
+
+        // Submit result
+        // Update winner dropdown and labels when match ID is entered
+        document.getElementById('result-match-id').addEventListener('input', function() {
+            const matchId = this.value.trim();
+            const winnerSelect = document.getElementById('result-winner');
+            let homeName = 'Team 1';
+            let awayName = 'Team 2';
+
+            // Try to find match in WC data by matchId pattern
+            const match = CONFIG.WORLDCUP_2026_MATCHES.find(m => {
+                const id = `${m.homeTeam.toLowerCase().replace(/\s+/g, '-')}-vs-${m.awayTeam.toLowerCase().replace(/\s+/g, '-')}-${m.date}`;
+                return id === matchId;
+            });
+
+            if (match) {
+                homeName = match.homeTeam;
+                awayName = match.awayTeam;
+            } else {
+                // Try to extract team names from match ID format: team1-vs-team2-date
+                const parts = matchId.split('-vs-');
+                if (parts.length === 2) {
+                    homeName = parts[0].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                    const awayWithDate = parts[1];
+                    const dateMatch = awayWithDate.match(/^(.+)-(\d{4}-\d{2}-\d{2})$/);
+                    awayName = dateMatch ? dateMatch[1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : awayWithDate;
+                }
+            }
+
+            // Update labels
+            document.getElementById('result-home-label').textContent = `${homeName} Goals`;
+            document.getElementById('result-away-label').textContent = `${awayName} Goals`;
+
+            // Update winner dropdown
+            winnerSelect.innerHTML = '';
+            winnerSelect.add(new Option(homeName, homeName));
+            winnerSelect.add(new Option('Draw', 'draw'));
+            winnerSelect.add(new Option(awayName, awayName));
+        });
+
+        async function submitResult() {
+            const payload = {
+                action: 'submitResult',
+                matchId: document.getElementById('result-match-id').value.trim(),
+                actualGoalsHome: parseInt(document.getElementById('result-home').value),
+                actualGoalsAway: parseInt(document.getElementById('result-away').value),
+                actualWinner: document.getElementById('result-winner').value
+            };
+
+            if (!payload.matchId || isNaN(payload.actualGoalsHome) || isNaN(payload.actualGoalsAway)) {
+                document.getElementById('result-status').innerHTML = '<span style="color:#ff6b6b;">Please fill all fields</span>';
+                return;
+            }
+
+            try {
+                const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                document.getElementById('result-status').innerHTML = result.success
+                    ? '<span style="color:#2ed573;">Result saved & leaderboard updated!</span>'
+                    : `<span style="color:#ff6b6b;">${result.message || 'Error'}</span>`;
+            } catch (err) {
+                document.getElementById('result-status').innerHTML = `<span style="color:#ff6b6b;">Error: ${err.message}</span>`;
+            }
+        }
+
+        // Load matches (filtered by tournament)
+        async function loadMatches() {
+            const listEl = document.getElementById('matches-list');
+            const tournamentId = getSelectedTournament();
+            listEl.innerHTML = '<p style="color:#aaa;">Loading...</p>';
+
+            try {
+                const url = `${CONFIG.APPS_SCRIPT_URL}?action=listMatches&tournamentId=${encodeURIComponent(tournamentId)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success && data.matches.length > 0) {
+                    const baseUrl = window.location.href.replace('admin.html', 'index.html');
+                    listEl.innerHTML = data.matches.map(m => {
+                        const link = `${baseUrl}?match=${encodeURIComponent(m.matchId)}`;
+                        return `
+                            <div class="match-item">
+                                <div class="match-info">
+                                    <strong>${m.homeTeam} vs ${m.awayTeam}</strong>
+                                    ${m.group ? `<span style="color:#ffd200; margin-left:8px;">[Group ${m.group}]</span>` : ''}
+                                    <br><small style="color:#aaa;">${m.date} | ${m.venue || ''} | ID: ${m.matchId}</small>
+                                </div>
+                                <div class="match-actions">
+                                    <button class="copy-btn" onclick="copyLink('${link}')">📋 Copy Link</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    listEl.innerHTML = '<p style="color:#aaa;">No matches found for this tournament.</p>';
+                }
+            } catch (err) {
+                listEl.innerHTML = `<p style="color:#ff6b6b;">Error: ${err.message}</p>`;
+            }
+        }
+
+        function copyLink(link) {
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Link copied to clipboard!');
+            });
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('status-msg');
+            el.textContent = msg;
+            el.className = type;
+            setTimeout(() => { el.style.display = 'none'; el.className = ''; }, 4000);
+        }
+    </script>
+</body>
+</html>
